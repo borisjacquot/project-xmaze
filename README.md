@@ -18,11 +18,15 @@
 
 Un projet réalisé par Boris Jacquot et Louis Wadbled.
 
+
 ## Installation
+
+C'est toujours bien.
 
 ### Dépendances
 
 + SDL2
+
 ```bash
 apt install libsdl2-dev
 apt install libsdl2-gfx-dev
