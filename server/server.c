@@ -13,14 +13,13 @@ void hand(int sig) {
 }
 
 int main(void) {
-
     /* --- BROADCAST UDP --- */
     struct sigaction action = {0};
     struct broadReturn br;
     balise_t balise;
 
-    balise.port = atoi(UDP_PORT);
-    strcpy(balise.name, "xmazing");
+    balise.port = atoi("1330");
+    strcpy(balise.name, "Xmazing");
 
     br = setBroadcast(UDP_PORT);
 
