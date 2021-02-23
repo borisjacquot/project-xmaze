@@ -16,7 +16,7 @@ struct broadReturn setBroadcast(char * service) {
     hints.ai_canonname = NULL;
     hints.ai_addr = NULL;
     hints.ai_next = NULL;
-
+    //TODO voir client.c sur zabeth11 (2 getaddrinfo a faire)
     s = getaddrinfo(NULL, service, &hints, &result);
     if (s != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
@@ -149,8 +149,10 @@ server_t pollEcoute(int s){
 	return tab[choix];
 }
 
+//TODO utiliser getaddrinfo ??
 /* Fonction d'ecoute du broadcast UDP sur le port 1337 */
 server_t udpEcoute(int port){
+
 	struct sockaddr_in mysocket;
 	int s;
 	s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -168,8 +170,10 @@ server_t udpEcoute(int port){
 	bind(s, (struct sockaddr *)&mysocket, sizeof(struct sockaddr));
 
 	printf("Lecture du port %d ...\n",port);
-	server_t server=pollEcoute(s);
-	close(s);
+	server_t infoServer=pollEcoute(sfd);
+	close(sfd);
 
-	return server;
+	return infoServer;
 }
+
+
