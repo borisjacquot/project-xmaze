@@ -3,8 +3,9 @@
 CC = gcc
 SOURCES = $(wildcard *.c)
 OBJETS = $(SOURCES:.c=.o)
-CFLAGS = -Wall -Wextra -Werror
+CFLAGS = -Wall -Wextra -Werror -I ../libs/libsockets -I ../common
 CIBLE = client
+BIBLIOTHEQUES = -L ../libs/libsockets -lsockets
 
 # Cible principale
 
@@ -13,7 +14,7 @@ all: $(CIBLE)
 # Dependances pour l'executable
 
 $(CIBLE): $(OBJETS)
-	$(CC) -o $@ $^ 
+	$(CC) -o $@ $^ $(BIBLIOTHEQUES)
 
 # Nettoyage
 
