@@ -1,8 +1,14 @@
 #include <stdint.h>
 #include "common.h"
 #include "libsockets.h"
+#include "libthreads.h"
 
 #define UDP_PORT "1337"
+
+typedef struct {
+  struct broadReturn br;
+  struct balise_t b;
+} beaconPack;
 
 int keepRunning = 1;
 
@@ -12,28 +18,35 @@ void hand(int sig) {
     }
 }
 
+void beacon(void *pack){
+    beaconPack *p=pack;
+    struct broadReturn *br=&pack->br;
+    balise_t *b=&pack->b;
+    while(keepRunning) {
+        sendBroadcast(br->sfd, br->broad, (void *)b, sizeof(balise_t));
+        sleep(5);
+    }
+    close(br->sfd);
+}
+
 int main(void) {
     /* --- BROADCAST UDP --- */
     struct sigaction action = {0};
-    struct broadReturn br;
-    balise_t balise;
-
-    balise.port = atoi("1330");
-    strcpy(balise.name, "Xmazing");
-
-    br = setBroadcast(UDP_PORT);
 
     action.sa_handler = hand;
     sigaction(SIGINT, &action, NULL);
 
+    beaconPack pack;
+
+    pack.b.port = atoi("1330");
+    strcpy(pack.b.name, "Xmazing");
+
+    pack.br = setBroadcast(UDP_PORT);
+
     /* envoi du message */
-    while(keepRunning) {
-        sendBroadcast(br.sfd, br.broad, (void *) &balise, sizeof(balise));
-        sleep(1);
-    }
-    close(br.sfd);
+    launchThread(beacon,&pack,sizeof(pack));
     /* --- FIN BROADCAST UDP --- */
 
-    printf("Belle journée\n");
+    printf("\nBelle journée\n");
     return 0;
 }
