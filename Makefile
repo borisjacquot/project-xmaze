@@ -16,7 +16,7 @@ MAKE = make
 # Constantes du projet
 #
 
-DIRS=client server libs
+DIRS=libs client server
 
 #
 # Cible principale

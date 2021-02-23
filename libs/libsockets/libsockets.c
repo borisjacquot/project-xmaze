@@ -1,128 +1,88 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-
 #include "libsockets.h"
 
-static void app(const char *address, const char *name)
-{
-   SOCKET sock = init_connection(address);
-   char buffer[BUF_SIZE];
+struct broadReturn setBroadcast(char * service) {
+    /* EXEMPLE MAN GETADDRINFO */
+    struct addrinfo hints, *result, *rp;
+    struct sockaddr_storage broad;
+    struct broadReturn r;
+    int s, sfd;
+    int optval=1, optlen=sizeof(int);
 
-   fd_set rdfs;
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC;    /* IPv4 ou IPv6 */
+    hints.ai_socktype = SOCK_DGRAM; /* Non connecté */
+    hints.ai_flags = AI_PASSIVE;    /* Wildcard IP */
+    hints.ai_protocol = 0;          /* Any protocol */
+    hints.ai_canonname = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
 
-   /* send our name */
-   write_server(sock, name);
+    s = getaddrinfo(NULL, service, &hints, &result);
+    if (s != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+        exit(EXIT_FAILURE);
+    }
 
-   while(1)
-   {
-      FD_ZERO(&rdfs);
+    /* On boucle jusqu'à temps qu'on réussisse à bind */
+    for (rp = result; rp != NULL; rp = rp->ai_next) {
+      if (rp->ai_family==AF_INET) break;
+    }
 
-      /* add STDIN_FILENO */
-      FD_SET(STDIN_FILENO, &rdfs);
+    if (rp == NULL) rp = result;
 
-      /* add the socket */
-      FD_SET(sock, &rdfs);
+    if (rp == NULL) {               /* No address succeeded */
+        fprintf(stderr, "Could not find socket address\n");
+        exit(EXIT_FAILURE);
+    }
 
-      if(select(sock + 1, &rdfs, NULL, NULL, NULL) == -1)
-      {
-         perror("select()");
-         exit(errno);
-      }
+    sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+    if (sfd < 0) { 
+        fprintf(stderr, "Could not create socket\n");
+        exit(EXIT_FAILURE);
+    }
 
-      /* something from standard input : i.e keyboard */
-      if(FD_ISSET(STDIN_FILENO, &rdfs))
-      {
-         fgets(buffer, BUF_SIZE - 1, stdin);
-         {
-            char *p = NULL;
-            p = strstr(buffer, "\n");
-            if(p != NULL)
-            {
-               *p = 0;
-            }
-            else
-            {
-               /* fclean */
-               buffer[BUF_SIZE - 1] = 0;
-            }
-         }
-         write_server(sock, buffer);
-      }
-      else if(FD_ISSET(sock, &rdfs))
-      {
-         int n = read_server(sock, buffer);
-         /* server down */
-         if(n == 0)
-         {
-            printf("Server disconnected !\n");
+    if (bind(sfd, rp->ai_addr, rp->ai_addrlen) != 0){
+        fprintf(stderr, "Could not bind\n");
+        exit(EXIT_FAILURE);
+    }
+
+    switch (rp->ai_family) {
+        case AF_INET: {
+            struct sockaddr_in *addr = (struct sockaddr_in *) rp->ai_addr;
+            addr->sin_addr.s_addr = htonl(INADDR_BROADCAST);
             break;
-         }
-         puts(buffer);
-      }
-   }
+                      }
 
-   end_connection(sock);
+        case AF_INET6: {
+            struct sockaddr_in6 *addr = (struct sockaddr_in6 *) rp->ai_addr;
+            inet_pton(AF_INET6, "ff02::1", &addr->sin6_addr);
+            break;
+                     }
+    }
+
+    broad=*(struct sockaddr_storage *)rp->ai_addr;
+
+    freeaddrinfo(result); // result devient useless
+
+    if(setsockopt(sfd, SOL_SOCKET, SO_BROADCAST, (char *) &optval, optlen)){
+        perror("Error setting socket to BROADCAST mode");
+        exit(1);
+    }
+
+
+    r.sfd = sfd;
+    r.broad = broad;
+
+    return r;
+
 }
 
-static int init_connection(const char *address)
-{
-   SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);
-   SOCKADDR_IN sin = { 0 };
-   struct hostent *hostinfo;
+void sendBroadcast(int sfd, struct sockaddr_storage broad, char * msg, int size) {
+    int numbytes;
+    if ((numbytes=sendto(sfd, msg, size, 0, (struct sockaddr *)&broad, sizeof(broad))) == -1) {
+        perror("sendto");
+        exit(1);
+    }
 
-   if(sock == INVALID_SOCKET)
-   {
-      perror("socket()");
-      exit(errno);
-   }
-
-   hostinfo = gethostbyname(address);
-   if (hostinfo == NULL)
-   {
-      fprintf (stderr, "Unknown host %s.\n", address);
-      exit(EXIT_FAILURE);
-   }
-
-   sin.sin_addr = *(IN_ADDR *) hostinfo->h_addr;
-   sin.sin_port = htons(PORT);
-   sin.sin_family = AF_INET;
-
-   if(connect(sock,(SOCKADDR *) &sin, sizeof(SOCKADDR)) == SOCKET_ERROR)
-   {
-      perror("connect()");
-      exit(errno);
-   }
-
-   return sock;
-}
-
-static void end_connection(int sock)
-{
-   closesocket(sock);
-}
-
-static int read_server(SOCKET sock, char *buffer)
-{
-   int n = 0;
-
-   if((n = recv(sock, buffer, BUF_SIZE - 1, 0)) < 0)
-   {
-      perror("recv()");
-      exit(errno);
-   }
-
-   buffer[n] = 0;
-
-   return n;
-}
-
-static void write_server(SOCKET sock, const char *buffer)
-{
-   if(send(sock, buffer, strlen(buffer), 0) < 0)
-   {
-      perror("send()");
-      exit(errno);
-   }
+    printf("sent %d bytes\n",numbytes);
 }

@@ -1,30 +1,29 @@
 #ifndef LIBSOCKETS_H
 #define CLIENT_H
 
+/* INCLUDES */
 #include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <signal.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
+#include <netdb.h>
 #include <arpa/inet.h>
-#include <unistd.h> // close 
-#include <netdb.h> // gethostbyname
-#define INVALID_SOCKET -1
-#define SOCKET_ERROR -1
-#define closesocket(s) close(s)
-typedef int SOCKET;
-typedef struct sockaddr_in SOCKADDR_IN;
-typedef struct sockaddr SOCKADDR;
-typedef struct in_addr IN_ADDR;
+#include <netinet/in.h>
 
+/* DEFINE  */
 
-#define CRLF     "\r\n"
-#define PORT     1337 // port du serveur ?
+/* STRUCTURES  */
+struct broadReturn {
+    int sfd;
+    struct sockaddr_storage broad;
+};
 
-#define BUF_SIZE 1024
+/* PROTOTYPES  */
+struct broadReturn setBroadcast(char *); //config les sockets piur broadcast udp
+void sendBroadcast(int, struct sockaddr_storage, char *, int); //envoie message broadcast
 
-static void app(const char *address, const char *name);
-static int init_connection(const char *address);
-static void end_connection(int sock);
-static int read_server(SOCKET sock, char *buffer);
-static void write_server(SOCKET sock, const char *buffer);
 
 #endif // LIBSOCKETS_H
