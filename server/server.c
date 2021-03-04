@@ -7,7 +7,7 @@
 
 typedef struct {
   struct broadReturn br;
-  struct balise_t b;
+  balise_t b;
 } beaconPack;
 
 int keepRunning = 1;
@@ -20,8 +20,8 @@ void hand(int sig) {
 
 void beacon(void *pack){
     beaconPack *p=pack;
-    struct broadReturn *br=&pack->br;
-    balise_t *b=&pack->b;
+    struct broadReturn *br=&p->br;
+    balise_t *b=&p->b;
     while(keepRunning) {
         sendBroadcast(br->sfd, br->broad, (void *)b, sizeof(balise_t));
         sleep(5);
@@ -42,7 +42,7 @@ int main(void) {
     strcpy(pack.b.name, "Xmazing");
 
     pack.br = setBroadcast(UDP_PORT);
-
+    //beacon(&pack);
     /* envoi du message */
     launchThread(beacon,&pack,sizeof(pack));
     /* --- FIN BROADCAST UDP --- */
