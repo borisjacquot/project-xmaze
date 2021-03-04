@@ -16,5 +16,6 @@ void launchThread(void (*function)(void *),void *argument,int size){
   memcpy(arg->argument,argument,size);
   pthread_t tid;
   pthread_create(&tid, NULL, _launchThread, (void *)arg);
-  pthread_detach(tid);
+  //pthread_detach(tid);
+  pthread_join(tid,NULL);
 }
