@@ -170,8 +170,8 @@ server_t udpEcoute(int port){
 	bind(s, (struct sockaddr *)&mysocket, sizeof(struct sockaddr));
 
 	printf("Lecture du port %d ...\n",port);
-	server_t infoServer=pollEcoute(sfd);
-	close(sfd);
+	server_t infoServer=pollEcoute(s);
+	close(s);
 
 	return infoServer;
 }
