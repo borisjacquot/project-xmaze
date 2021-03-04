@@ -9,7 +9,6 @@ static void *_launchThread(void *arg){
 }
 
 void launchThread(void (*function)(void *),void *argument,int size){
-	printf("hello world\n");
   _internal_type *arg;
   arg=malloc(sizeof(_internal_type));
   arg->argument=malloc(size);
