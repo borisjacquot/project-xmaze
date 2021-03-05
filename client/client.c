@@ -29,11 +29,12 @@ int connexionServ(server_t Serveur){
 }
 
 int main(){
-	server_t serv;
-	//server_t serv = udpEcoute(PORT);
-	strcpy(serv.portTCP,"1330");
-	inet_aton("172.26.145.69",&serv.addr_Server);
+	//server_t serv;
+	server_t serv = udpEcoute(PORT);
+	//strcpy(serv.portTCP,"1330");
+	//inet_aton("172.26.145.69",&serv.addr_Server);
 	printf("Le port de la partie choisie est : %s\n",serv.portTCP);
+	printf("Adresse de l'hote : %s\n",inet_ntoa(serv.addr_Server));
 	/* === Connexion TCP client : utilisation du cours === */
 	int socket;
 	socket=connexionServ(serv);
