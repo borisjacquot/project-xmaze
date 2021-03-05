@@ -128,7 +128,8 @@ server_t pollEcoute(int s){
 					buffer[i]=buffer[i+2];
 				}
 				strcpy(tab[nbServ].nom_Server,buffer);
-				tab[nbServ].addr_Server=(struct sockaddr *)&other_socket;
+				//TODO Modifier
+				//tab[nbServ].addr_Server=(struct sockaddr *)&other_socket;
 				printf("%d) La partie de jeu %s est sur le port : %d\n",nbServ,buffer,port);
 			}
 		}

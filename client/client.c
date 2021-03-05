@@ -11,8 +11,8 @@ int connexionServ(server_t Serveur){
 	memset(&precisions,0,sizeof precisions);
 	precisions.ai_family=AF_UNSPEC;
 	precisions.ai_socktype=SOCK_STREAM;
-	// ajouter l'addresse, obtenue dans Serveur.addr_Serv->??
-	statut=getaddrinfo("172.26.145.53",Serveur.portTCP,&precisions,&origine);
+	// ajouter l'adresse, obtenue dans Serveur.addr_Serv->sa_data
+	statut=getaddrinfo(inet_ntoa(Serveur.addr_Server),Serveur.portTCP,&precisions,&origine);
 	if(statut<0){ perror("connexionServ.getaddrinfo"); exit(EXIT_FAILURE); }
 	struct addrinfo *p;
 	for(p=origine,resultat=origine;p!=NULL;p=p->ai_next)
@@ -29,9 +29,10 @@ int connexionServ(server_t Serveur){
 }
 
 int main(){
-	//server_t serv;
-	server_t serv = udpEcoute(PORT);
-	//strcpy(serv.portTCP,"1330");
+	server_t serv;
+	//server_t serv = udpEcoute(PORT);
+	strcpy(serv.portTCP,"1330");
+	inet_aton("172.26.145.69",&serv.addr_Server);
 	printf("Le port de la partie choisie est : %s\n",serv.portTCP);
 	/* === Connexion TCP client : utilisation du cours === */
 	int socket;

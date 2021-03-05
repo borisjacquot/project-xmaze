@@ -27,7 +27,7 @@ typedef struct server_s{
 	char nom_brut[10];
 	char nom_Server[10];
 	char portTCP[5];
-	struct sockaddr *addr_Server;
+	struct in_addr addr_Server;
 }server_t;
 
 /* PROTOTYPES  */
