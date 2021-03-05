@@ -69,7 +69,6 @@ struct broadReturn setBroadcast(char * service) {
         exit(1);
     }
 
-
     r.sfd = sfd;
     r.broad = broad;
 
@@ -124,7 +123,7 @@ server_t pollEcoute(int s){
 				nbServ++;
 				strcpy(tab[nbServ].nom_brut,buffer);
 				int port = buffer[0] + (buffer[1]<<8);
-				tab[nbServ].portTCP=port;	
+				snprintf(tab[nbServ].portTCP,5,"%d",port);	
 				for(long unsigned int i=0;i<sizeof(buffer)-1;i++){
 					buffer[i]=buffer[i+2];
 				}

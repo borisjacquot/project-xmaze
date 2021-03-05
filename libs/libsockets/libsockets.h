@@ -26,7 +26,7 @@ struct broadReturn {
 typedef struct server_s{
 	char nom_brut[10];
 	char nom_Server[10];
-	int portTCP;
+	char portTCP[5];
 	struct sockaddr *addr_Server;
 }server_t;
 
