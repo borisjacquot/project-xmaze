@@ -37,12 +37,23 @@ struct broadReturn setBroadcast(char * service) {
 
     sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
     if (sfd < 0) { 
-        fprintf(stderr, "Could not create socket\n");
+	perror("socket");
         exit(EXIT_FAILURE);
     }
 
+    if(setsockopt(sfd, SOL_SOCKET, SO_BROADCAST, (char *) &optval, optlen)){
+        perror("Error setting socket to BROADCAST mode");
+        exit(1);
+    }
+    #ifdef SO_REUSEADDR
+    if(setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, (char *) &optval, optlen)){
+        perror("Error setting socket to REUSEADDR mode");
+        exit(1);
+    }
+    #endif
+
     if (bind(sfd, rp->ai_addr, rp->ai_addrlen) != 0){
-        fprintf(stderr, "Could not bind\n");
+	perror("bind");
         exit(EXIT_FAILURE);
     }
 
@@ -64,16 +75,6 @@ struct broadReturn setBroadcast(char * service) {
 
     freeaddrinfo(result); // result devient useless
 
-    if(setsockopt(sfd, SOL_SOCKET, SO_BROADCAST, (char *) &optval, optlen)){
-        perror("Error setting socket to BROADCAST mode");
-        exit(1);
-    }
-    #ifdef SO_REUSEADDR
-    if(setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, (char *) &optval, optlen)){
-        perror("Error setting socket to BROADCAST mode");
-        exit(1);
-    }
-    #endif
     r.sfd = sfd;
     r.broad = broad;
 
