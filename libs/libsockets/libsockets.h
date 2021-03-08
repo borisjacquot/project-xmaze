@@ -13,6 +13,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <poll.h>
+#include <netinet/tcp.h>
+#include <stdbool.h>
 
 /* DEFINE  */
 #define MAX_SERVER 50 //maximum de serveur possible de stocker dans le serveur

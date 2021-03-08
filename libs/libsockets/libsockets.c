@@ -155,10 +155,16 @@ server_t udpEcoute(int port){
 	struct sockaddr_in mysocket;
 	int s;
 	s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if(s<0){
+		perror("udpEcoute.socket");
+		exit(EXIT_FAILURE);
+	}
 	int broadcast=1;
 
-	setsockopt(s, SOL_SOCKET, SO_BROADCAST,
-		    &broadcast, sizeof broadcast);
+	if((setsockopt(s, SOL_SOCKET, SO_BROADCAST,&broadcast, sizeof broadcast))!=0){
+		perror("udpEcoute.setsockopt");
+		exit(EXIT_FAILURE);
+	}
 
 	memset(&mysocket, 0, sizeof(mysocket));
 	mysocket.sin_family = AF_INET;
@@ -166,7 +172,10 @@ server_t udpEcoute(int port){
 	mysocket.sin_addr.s_addr = INADDR_ANY;
 	bzero(mysocket.sin_zero,8);
 
-	bind(s, (struct sockaddr *)&mysocket, sizeof(struct sockaddr));
+	if((bind(s, (struct sockaddr *)&mysocket, sizeof(struct sockaddr)))!=0){
+		perror("udpEcoute.bind");
+		exit(EXIT_FAILURE);
+	}
 
 	printf("Lecture du port %d ...\n",port);
 	server_t infoServer=pollEcoute(s);
