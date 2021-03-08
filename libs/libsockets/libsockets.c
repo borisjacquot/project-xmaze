@@ -68,7 +68,12 @@ struct broadReturn setBroadcast(char * service) {
         perror("Error setting socket to BROADCAST mode");
         exit(1);
     }
-
+    #ifdef SO_REUSEADDR
+    if(setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, (char *) &optval, optlen)){
+        perror("Error setting socket to BROADCAST mode");
+        exit(1);
+    }
+    #endif
     r.sfd = sfd;
     r.broad = broad;
 
@@ -161,7 +166,7 @@ server_t udpEcoute(int port){
 	}
 	int broadcast=1;
 
-	if((setsockopt(s, SOL_SOCKET, SO_BROADCAST,&broadcast, sizeof broadcast))!=0){
+	if((setsockopt(s, SOL_SOCKET, SO_REUSEADDR,&broadcast, sizeof broadcast))!=0){
 		perror("udpEcoute.setsockopt");
 		exit(EXIT_FAILURE);
 	}
