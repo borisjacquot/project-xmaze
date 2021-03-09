@@ -226,9 +226,9 @@ void discussionTCP(int socket){
 		int nb=poll(descripteurs,2,-1);
 		if(nb<0){ perror("main.poll"); exit(EXIT_FAILURE); }
 		if((descripteurs[0].revents&POLLIN)!=0){
-			int taille=read(socket,tampon,MAX_TAMPON);
-			if(taille<=0) break;
-			write(1,tampon,taille);
+			FILE *file=fdopen(socket,"r");
+			fgets(tampon,MAX_TAMPON,file);
+			printf("%s",tampon);
 		}
 		if((descripteurs[1].revents&POLLIN)!=0){
 			int taille=read(0,tampon,MAX_TAMPON);
