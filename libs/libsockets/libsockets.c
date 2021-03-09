@@ -188,5 +188,57 @@ server_t udpEcoute(int port){
 
 	return infoServer;
 }
+/* Initialisation de la connexion TCP avec le serveur */
+int connexionServ(server_t Serveur){
+	struct addrinfo precisions,*resultat,*origine;
+	int statut;
+	int s;
 
+	memset(&precisions,0,sizeof precisions);
+	precisions.ai_family=AF_UNSPEC;
+	precisions.ai_socktype=SOCK_STREAM;
 
+	statut=getaddrinfo(inet_ntoa(Serveur.addr_Server),Serveur.portTCP,&precisions,&origine);
+	if(statut<0){ perror("connexionServ.getaddrinfo"); exit(EXIT_FAILURE); }
+	struct addrinfo *p;
+	for(p=origine,resultat=origine;p!=NULL;p=p->ai_next)
+		if(p->ai_family==AF_INET6){ resultat=p; break; }
+
+	s=socket(resultat->ai_family,resultat->ai_socktype,resultat->ai_protocol);
+	if(s<0){ perror("connexionServ.socket"); exit(EXIT_FAILURE); }
+
+	if(connect(s,resultat->ai_addr,resultat->ai_addrlen)<0) return -1;
+
+	freeaddrinfo(origine);
+
+	return s;
+}
+
+/* Discussion avec le serveur avec un poll sur le port en TCP */
+void discussionTCP(int socket){
+	struct pollfd descripteurs[2];
+	descripteurs[0].fd=socket;
+	descripteurs[0].events=POLLIN;
+	descripteurs[1].fd=0;
+	descripteurs[1].events=POLLIN;
+	while(1){
+		char tampon[MAX_TAMPON];
+		int nb=poll(descripteurs,2,-1);
+		if(nb<0){ perror("main.poll"); exit(EXIT_FAILURE); }
+		if((descripteurs[0].revents&POLLIN)!=0){
+			int taille=read(socket,tampon,MAX_TAMPON);
+			if(taille<=0) break;
+			write(1,tampon,taille);
+		}
+		if((descripteurs[1].revents&POLLIN)!=0){
+			int taille=read(0,tampon,MAX_TAMPON);
+			if(taille<=0) break;
+			if(fflush(0)){
+				fprintf(stderr,"Impossible de flush le stream\n");
+			}
+			write(socket,tampon,taille);
+		}
+	}
+	shutdown(socket,SHUT_RDWR);
+}
+	

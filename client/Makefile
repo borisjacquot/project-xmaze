@@ -3,9 +3,9 @@
 CC = gcc
 SOURCES = $(wildcard *.c)
 OBJETS = $(SOURCES:.c=.o)
-CFLAGS = -Wall -Wextra -Werror -I ../libs/libsockets -I ../common
+CFLAGS = -Wall -Wextra -Werror -I ../libs/libsockets -I ../common -I ../libs/libthreads
 CIBLE = client
-BIBLIOTHEQUES = -L ../libs/libsockets -lsockets
+BIBLIOTHEQUES = -L ../libs/libsockets -lsockets -L ../libs/libthreads -lthreads -pthread
 
 # Cible principale
 
