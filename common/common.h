@@ -7,3 +7,12 @@ typedef struct {
 } balise_t;
 
 #pragma pack()
+
+#pragma pack(1)
+
+typedef struct {
+    int s;
+    int i;
+} balise_cotcp;
+
+#pragma pack()

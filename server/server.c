@@ -12,19 +12,21 @@ typedef struct {
   balise_t b;
 } beaconPack;
 
-int keepRunning = 1;
+int gameStarted = 0;
 
+/*
 void hand(int sig) {
     if (sig == SIGINT) {
         keepRunning = 0;
     }
 }
+*/
 
 void beacon(void *pack){
     beaconPack *p=pack;
     struct broadReturn *br=&p->br;
     balise_t *b=&p->b;
-    while(keepRunning) {
+    while(!gameStarted) {
         sendBroadcast(br->sfd, br->broad, (void *)b, sizeof(balise_t));
         sleep(5);
     }
@@ -33,6 +35,11 @@ void beacon(void *pack){
 
 bool startsWith(const char * src, const char * base) {
     return strncmp(src, base, strlen(base)) == 0;
+}
+
+void clientChat(void *pack) {
+    balise_cotcp *b = pack;
+    printf("Client %d connecté\n", b->i);
 }
 
 int initialisationServeur(char *service,int connexions){
@@ -85,16 +92,21 @@ int initialisationServeur(char *service,int connexions){
     return s;
 }
 
-int boucleServeur(int ecoute,int (*traitement)(int)) {
-    int dialogue;
-
+void boucleServeur(void * arg) {
+    int dialogue, i=0;
+    int s = *(int*) arg;
+    balise_cotcp b;
     while(1){
-
+      
       /* Attente d'une connexion */
-      if((dialogue=accept(ecoute,NULL,NULL))<0) return -1;
-
-      /* Passage de la socket de dialogue a la fonction de traitement */
-      if(traitement(dialogue)<0){ shutdown(ecoute,SHUT_RDWR); return 0;}
+      
+      if (i < MAX_CONNEXIONS) {
+        if((dialogue=accept(s,NULL,NULL))<0) exit(-1);
+        b.s = dialogue;
+        b.i = i;
+        launchThread(clientChat, &b, sizeof(b));
+        i++;
+      }
 
     }
 }
@@ -123,10 +135,12 @@ int gestionClient(int s){
 
 int main(void) {
     /* --- BROADCAST UDP --- */
-    struct sigaction action = {0};
-
+//    struct sigaction action = {0};
+    
+    /*
     action.sa_handler = hand;
     sigaction(SIGINT, &action, NULL);
+    */
 
     beaconPack pack;
 
@@ -137,7 +151,6 @@ int main(void) {
     launchThread(beacon,&pack,sizeof(pack));
     /* --- FIN BROADCAST UDP --- */
 
-    pause();
 
     /* --- CONNEXION TCP  --- */
     int s;
@@ -145,9 +158,10 @@ int main(void) {
     /* Initialisation du serveur */
     s=initialisationServeur("1330",MAX_CONNEXIONS);
 
-    /* Lancement de la boucle d'ecoute */
-    boucleServeur(s,gestionClient);
+    launchThread(boucleServeur, &s, sizeof s);
     /* --- FIN CONNEXION TCP  ---  */
+
+    pause();
 
     printf("\nBelle journée\n");
     return 0;
