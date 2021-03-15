@@ -117,6 +117,7 @@ server_t pollEcoute(int s){
 			unsigned sock_len=sizeof(struct sockaddr);
 			recvfrom(s, buffer, sizeof(buffer)-1, 0, (struct sockaddr *)&other_socket, &sock_len);
 			char name[50];
+			strcpy(name,buffer);
 			for(long unsigned int i=0;i<sizeof(name)-1;i++){
 				name[i]=name[i+2];
 			}
