@@ -89,7 +89,7 @@ void sendBroadcast(int sfd, struct sockaddr_storage broad, char * msg, int size)
         exit(1);
     }
 
-    printf("sent %d bytes\n",numbytes);
+    printf("\033[0;36mINFO: sent %d bytes in broadcast mode\033[0m\n",numbytes);
 }
 
 /* === POLL SUR ENTREE STANDARD ET LA SOCKET POUR AFFICHAGE ET CHOIX DU SERVEUR === */

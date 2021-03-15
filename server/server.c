@@ -5,6 +5,8 @@
 #define UDP_PORT          "1337"
 #define MAX_LIGNE         512
 #define MAX_CONNEXIONS    256
+#define MAX_ARGS          200
+#define MAX_CMD           56
 
 typedef struct {
   struct broadReturn br;
@@ -35,6 +37,33 @@ void beacon(void *pack){
     close(br->sfd);
 }
 
+void clientChat(void *pack) {
+    balise_cotcp *b = pack;
+    char cmd[MAX_CMD], args[MAX_ARGS];
+    
+    /* Obtient une structure de fichier */
+    FILE *dialogue=fdopen(b->s,"a+");
+    if(dialogue==NULL){ perror("gestionClient.fdopen"); exit(EXIT_FAILURE); }
+    
+    /* Bonjour */
+   // char ligne[MAX_LIGNE];
+    fprintf(dialogue, "\033[0;32mBienvenue joueur %d!\033[0m\n", b->i);
+    fflush(dialogue); //vider le buffer pour envoyer
+    printf("\033[0;32mClient %d connected\033[0m\n", b->i);
+
+    while (fscanf(dialogue, "%s %s", cmd, args) > 0) {
+      printf("\033[0;35mCMD: \033[0m%s\n\033[0;35mARGS: \033[0m%s\n", cmd, args);
+
+      if (strcmp(cmd, "CONNEXION") == 0) {
+        fprintf(dialogue, "Ton pseudo est %s\n", args);
+      }
+    }
+
+    /* Fin dialogue */
+    // fclose(dialogue);
+
+}
+
 int saveTCP(int s) {
     balise_cotcp b;
     if (nbClients < MAX_CONNEXIONS) {
@@ -47,33 +76,6 @@ int saveTCP(int s) {
     }
     printf("\033[0;31mError: Maximum number of connections has been reached\033[0m\n");
     return -1;
-}
-
-void clientChat(void *pack) {
-    balise_cotcp *b = pack;
-    printf("Client %d connecté\n", b->i);
-}
-
-int gestionClient(int s){
-
-    /* Obtient une structure de fichier */
-    FILE *dialogue=fdopen(s,"a+");
-    if(dialogue==NULL){ perror("gestionClient.fdopen"); exit(EXIT_FAILURE); }
-
-    /* Echo */
-    char ligne[MAX_LIGNE];
-    while(startsWith(fgets(ligne,MAX_LIGNE,dialogue), "CONNEXION") == 0) {
-      printf("\033[0;31merror : %s\033[0m\n", ligne);  
-      fprintf(dialogue,"> ERREUR\n");
-    }
-
-    char *ptok = strtok(ligne, " ");
-    ptok = strtok(NULL, " ");
-    fprintf(dialogue, "> Bienvenue %s\n", ptok);
-
-    /* Termine la connexion */
-    fclose(dialogue);
-    return 0;
 }
 
 int main(void) {
@@ -101,6 +103,10 @@ int main(void) {
 
     /* Initialisation du serveur */
     s=initialisationServeur("1330",MAX_CONNEXIONS);
+    if (s < 0) {
+      perror("Erreur initialisation serveur");
+      exit(-1);
+    }
     b.s = s;
     b.fonction=saveTCP;
 
