@@ -142,7 +142,7 @@ server_t pollEcoute(int s){
 				*/
 				strcpy(tab[nbServ].nom_Server,name);
 				tab[nbServ].addr_Server=other_socket.sin_addr;
-				printf("%d) La partie de jeu %s est sur le port : %d\n",nbServ,buffer,port);
+				printf("%d) La partie de jeu %s est sur le port : %d\n",nbServ,name,port);
 			}
 		}
 		if((descripteurs[1].revents&POLLIN)!=0){
@@ -228,27 +228,29 @@ int discussionTCP(int socket){
 	descripteurs[0].events=POLLIN;
 	descripteurs[1].fd=0;
 	descripteurs[1].events=POLLIN;
-	FILE *fileSockIn=fdopen(socket,"r");
+	FILE *fileSock=fdopen(socket,"a+");
 	//FILE *fileSockOut=fdopen(socket,"w");
 	FILE *fileOut=fdopen(1,"w");
-	//FILE *fileIn=fdopen(0,"r");
+	FILE *fileIn=fdopen(0,"r");
 	int arret = 0;
 	while(!arret){
 		char tampon[MAX_TAMPON];
 		int nb=poll(descripteurs,2,-1);
 		if(nb<0){ perror("main.poll"); exit(EXIT_FAILURE); }
 		if((descripteurs[0].revents&POLLIN)!=0){
-			if(fgets(tampon,MAX_TAMPON,fileSockIn)==NULL){
+			if(fgets(tampon,MAX_TAMPON,fileSock)==NULL){
 				arret=1;
 			}
 			fprintf(fileOut,"%s",tampon);
 		}
 		if((descripteurs[1].revents&POLLIN)!=0){
-			//fgets(tampon,MAX_TAMPON,fileIn);
-			//fprintf(fileSockOut,"%s",tampon);
-			int taille=read(0,tampon,MAX_TAMPON);
+			fgets(tampon,MAX_TAMPON,fileIn);
+			fflush(fileIn);
+			fprintf(fileSock,"%s",tampon);
+			fflush(fileSock);
+			/*int taille=read(0,tampon,MAX_TAMPON);
 			if(taille<0) break;
-			write(socket,tampon,MAX_TAMPON);
+			write(socket,tampon,MAX_TAMPON);*/
 		}
 	}
 	shutdown(socket,SHUT_RDWR);
