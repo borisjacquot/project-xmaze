@@ -16,8 +16,9 @@ void communicationServeur(void *pack){
 	server_t *server=pack;
 	int socket=connexionServ(*server);
 	while(!arret){
-		discussionTCP(socket);
+		arret=discussionTCP(socket);
 	}
+	printf("Fin de la connexion TCP, appuyez sur CTRL+C pour arreter le client\n");
 }
 
 int main(){
@@ -37,6 +38,6 @@ int main(){
 	/* Fin de la connexion */
 
 	pause();
-	printf("Fin du client ! \n");
+	printf("\nFin du client ! \n");
 	return 0;
 }

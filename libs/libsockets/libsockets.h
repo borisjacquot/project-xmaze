@@ -39,5 +39,5 @@ void sendBroadcast(int, struct sockaddr_storage, char *, int); //envoie message 
 server_t pollEcoute(int); //ecoute le port et l'entree standard pour choisir le serveur de jeu avec poll
 server_t udpEcoute(); //configuration de l'ecoute du broadcast udp
 int connexionServ(server_t); // initialisation de la connexion TCP avec le serveur
-void discussionTCP(int); //envoie des commandes avec le serveur et reception de ses réponses
+int discussionTCP(int); //envoie des commandes avec le serveur et reception de ses réponses
 #endif // LIBSOCKETS_H
