@@ -2,6 +2,7 @@
 #define CLIENT_H
 
 /* INCLUDES */
+#include <stdint.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,14 +18,26 @@
 #include <stdbool.h>
 
 /* DEFINE  */
-#define MAX_SERVER 50 //maximum de serveur possible de stocker dans le serveur
-#define MAX_TAMPON 200 //taille maximum des messages pour la discussion avec le serveur en TCP
+#define MAX_SERVER      50 // maximum de serveur possible de stocker dans le serveur
+#define MAX_TAMPON      200 //taille maximum des messages pour la discussion avec le serveur en TCP
+#define MAX_CONNEXIONS  256
+#define MAX_LIGNE       512
 
 /* STRUCTURES  */
 struct broadReturn {
     int sfd;
     struct sockaddr_storage broad;
 };
+
+typedef struct {
+    int s;
+    int i;
+} balise_cotcp;
+
+typedef struct {
+    int s;
+    int (*fonction) (int);
+} balise_trait;
 
 typedef struct server_s{
 	char nom_brut[10];
@@ -40,4 +53,7 @@ server_t pollEcoute(int); //ecoute le port et l'entree standard pour choisir le 
 server_t udpEcoute(); //configuration de l'ecoute du broadcast udp
 int connexionServ(server_t); // initialisation de la connexion TCP avec le serveur
 int discussionTCP(int); //envoie des commandes avec le serveur et reception de ses réponses
+int initialisationServeur(char *,int);
+void boucleServeur(void *);
+
 #endif // LIBSOCKETS_H
