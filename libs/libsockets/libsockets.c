@@ -223,31 +223,57 @@ int connexionServ(server_t Serveur){
 
 /* Discussion avec le serveur avec un poll sur le port en TCP */
 int discussionTCP(int socket){
-	struct pollfd descripteurs[2];
-	descripteurs[0].fd=socket;
-	descripteurs[0].events=POLLIN;
-	descripteurs[1].fd=0;
-	descripteurs[1].events=POLLIN;
 	FILE *fileSock=fdopen(socket,"a+");
 	//FILE *fileSockOut=fdopen(socket,"w");
 	FILE *fileOut=fdopen(1,"w");
 	FILE *fileIn=fdopen(0,"r");
 	int arret = 0;
+
+	/* Envoi du pseudo */
+	printf("Quel est votre pseudo ?\n");
+	char pseudo[20]; // Ajout d'une constante pour le max dans pseudo
+	fgets(pseudo,MAX_TAMPON,fileIn);
+	char str[MAX_TAMPON];
+	sprintf(str,"CONNEXION %s",pseudo);
+	fprintf(fileSock,"%s",str);
+	fflush(fileSock);	
+
+	/* Poll entree standard et socket TCP*/
+	struct pollfd descripteurs[2];
+	descripteurs[0].fd=socket;
+	descripteurs[0].events=POLLIN;
+	descripteurs[1].fd=0;
+	descripteurs[1].events=POLLIN;
 	while(!arret){
 		char tampon[MAX_TAMPON];
+		memset(tampon,0,MAX_TAMPON);
 		int nb=poll(descripteurs,2,-1);
 		if(nb<0){ perror("main.poll"); exit(EXIT_FAILURE); }
 		if((descripteurs[0].revents&POLLIN)!=0){
 			if(fgets(tampon,MAX_TAMPON,fileSock)==NULL){
 				arret=1;
 			}
+			if(fflush(fileSock)){
+				perror("fflush");
+				exit(EXIT_FAILURE);
+			}
 			fprintf(fileOut,"%s",tampon);
+			if(fflush(fileOut)){
+				perror("fflush");
+				exit(EXIT_FAILURE);
+			}
 		}
 		if((descripteurs[1].revents&POLLIN)!=0){
 			fgets(tampon,MAX_TAMPON,fileIn);
-			fflush(fileIn);
+			if(fflush(fileIn)){
+				perror("fflush");
+				exit(EXIT_FAILURE);
+			}
 			fprintf(fileSock,"%s",tampon);
-			fflush(fileSock);
+			if(fflush(fileSock)){
+				perror("fflush");
+				exit(EXIT_FAILURE);
+			}
 			/*int taille=read(0,tampon,MAX_TAMPON);
 			if(taille<0) break;
 			write(socket,tampon,MAX_TAMPON);*/
