@@ -22,6 +22,7 @@
 #define MAX_TAMPON      200 //taille maximum des messages pour la discussion avec le serveur en TCP
 #define MAX_CONNEXIONS  256
 #define MAX_LIGNE       512
+#define MAX_PSEUDO      64
 
 /* STRUCTURES  */
 struct broadReturn {
@@ -32,6 +33,10 @@ struct broadReturn {
 typedef struct {
     int s;
     int i;
+    char pseudo[MAX_PSEUDO];
+    FILE *fd;
+    int connected;
+    int admin;
 } balise_cotcp;
 
 typedef struct {

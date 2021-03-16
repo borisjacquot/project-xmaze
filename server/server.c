@@ -39,28 +39,62 @@ void beacon(void *pack){
 
 void clientChat(void *pack) {
     balise_cotcp *b = pack;
-    char cmd[MAX_CMD], args[MAX_ARGS];
+    char args[MAX_ARGS];
+    char ligne[MAX_LIGNE];
+    char list[MAX_LIGNE];
+    char buffer[MAX_LIGNE];
+    int statut, cpt=0;
+
+
     
     /* Obtient une structure de fichier */
     FILE *dialogue=fdopen(b->s,"a+");
     if(dialogue==NULL){ perror("gestionClient.fdopen"); exit(EXIT_FAILURE); }
     
     /* Bonjour */
-   // char ligne[MAX_LIGNE];
-    fprintf(dialogue, "\033[0;32mBienvenue joueur %d!\033[0m\n", b->i);
-    fflush(dialogue); //vider le buffer pour envoyer
     printf("\033[0;32mClient %d connected\033[0m\n", b->i);
 
-    while (fscanf(dialogue, "%s %s", cmd, args) > 0) {
-      printf("\033[0;35mCMD: \033[0m%s\n\033[0;35mARGS: \033[0m%s\n", cmd, args);
+    /* Traitement des commandes */
+    while (fgets(ligne, MAX_LIGNE, dialogue) != NULL) {
 
-      if (strcmp(cmd, "CONNEXION") == 0) {
-        fprintf(dialogue, "Ton pseudo est %s\n", args);
+      statut = sscanf(ligne, "CONNEXION %s", args);
+      if (statut == 1 && listClients[b->i].connected == 0) {
+        strcpy(listClients[b->i].pseudo, args);
+        listClients[b->i].connected = 1;
+        fprintf(dialogue, "CONNECTE %d\r\n", b->i);
+        fflush(dialogue);
+        for (int i = 0; i<=nbClients; i++) {
+          if (listClients[i].connected) {
+            strcat(list, listClients[i].pseudo);
+            strcat(list, " ");
+            cpt++;
+          }
+        }
+
+        printf("%d %s\n", cpt, list);
+
+        fprintf(dialogue, "JOUEURS (%d) %s\r\n", cpt, list);
+        fflush(dialogue);
+        memset(list, 0, sizeof(list));
+        cpt = 0;
+
+      }
+
+      statut = sscanf(ligne, "MSG %[0-9a-zA-Z ]", args);
+      if (statut == 1) {
+        sprintf(buffer, "MSGFROM %s %s\n", listClients[b->i].pseudo, args);
+        for(int i = 0; i<=nbClients; i++) {
+          if (listClients[i].connected) {
+            write(listClients[i].s, buffer, strlen(buffer));
+          }
+        }
       }
     }
 
     /* Fin dialogue */
-    // fclose(dialogue);
+    listClients[b->i].connected = 0;
+    fclose(dialogue);
+    printf("\033[0;31mClient %d disconnected\033[0m\n", b->i);
 
 }
 
@@ -69,6 +103,7 @@ int saveTCP(int s) {
     if (nbClients < MAX_CONNEXIONS) {
       b.s = s;
       b.i = nbClients;
+      b.connected = 0;
       launchThread(clientChat, &b, sizeof(b));
       listClients[nbClients] = b;
       nbClients++;
