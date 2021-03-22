@@ -222,21 +222,21 @@ int connexionServ(server_t Serveur){
 }
 
 /* Discussion avec le serveur avec un poll sur le port en TCP */
-int discussionTCP(int socket){
+void discussionTCP(int socket,int *statut){
 	FILE *fileSock=fdopen(socket,"a+");
 	//FILE *fileSockOut=fdopen(socket,"w");
-	FILE *fileOut=fdopen(1,"w");
+	//FILE *fileOut=fdopen(1,"w");
 	FILE *fileIn=fdopen(0,"r");
-	int arret = 0;
 
 	/* Envoi du pseudo */
 	printf("Quel est votre pseudo ?\n");
 	char pseudo[20]; // Ajout d'une constante pour le max dans pseudo
 	fgets(pseudo,MAX_TAMPON,fileIn);
+	fflush(fileIn);
 	char str[MAX_TAMPON];
 	sprintf(str,"CONNEXION %s",pseudo);
 	fprintf(fileSock,"%s",str);
-	fflush(fileSock);	
+	fflush(fileSock);
 
 	/* Poll entree standard et socket TCP*/
 	struct pollfd descripteurs[2];
@@ -244,21 +244,22 @@ int discussionTCP(int socket){
 	descripteurs[0].events=POLLIN;
 	descripteurs[1].fd=0;
 	descripteurs[1].events=POLLIN;
-	while(!arret){
+	
+	while(!(*statut)){
 		char tampon[MAX_TAMPON];
 		memset(tampon,0,MAX_TAMPON);
 		int nb=poll(descripteurs,2,-1);
 		if(nb<0){ perror("main.poll"); exit(EXIT_FAILURE); }
 		if((descripteurs[0].revents&POLLIN)!=0){
-			if(fgets(tampon,MAX_TAMPON,fileSock)==NULL){
-				arret=1;
+			if(fgets(tampon,MAX_LIGNE,fileSock)==NULL){
+				*statut=1;
 			}
 			if(fflush(fileSock)){
 				perror("fflush");
 				exit(EXIT_FAILURE);
 			}
-			fprintf(fileOut,"%s",tampon);
-			if(fflush(fileOut)){
+			fprintf(stdout,"%s",tampon);
+			if(fflush(stdout)){
 				perror("fflush");
 				exit(EXIT_FAILURE);
 			}
@@ -274,13 +275,8 @@ int discussionTCP(int socket){
 				perror("fflush");
 				exit(EXIT_FAILURE);
 			}
-			/*int taille=read(0,tampon,MAX_TAMPON);
-			if(taille<0) break;
-			write(socket,tampon,MAX_TAMPON);*/
 		}
 	}
-	shutdown(socket,SHUT_RDWR);
-	return 1;
 }
 
 int initialisationServeur(char *service,int connexions){

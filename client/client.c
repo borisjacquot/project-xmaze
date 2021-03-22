@@ -4,21 +4,23 @@
 #define PORT 1337
 
 struct sigaction action;
-static int arret=0;
+int statut=0;
 
 void hand(int sig){
 	if(sig==SIGINT){
-		arret=1;
+		statut=1;
 	}
 }
 
 void communicationServeur(void *pack){
 	server_t *server=pack;
 	int socket=connexionServ(*server);
-	while(!arret){
-		arret=discussionTCP(socket);
+
+	while(statut!=1){
+		discussionTCP(socket,&statut);
 	}
-	printf("Fin de la connexion TCP, appuyez sur CTRL+C pour arreter le client\n");
+	shutdown(socket,SHUT_RDWR);
+	printf("Fin de la connexion TCP avec le serveur\n");
 }
 
 int main(){
