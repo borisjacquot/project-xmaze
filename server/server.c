@@ -3,10 +3,11 @@
 #include "libthreads.h"
 
 #define UDP_PORT          "1337"
-#define MAX_LIGNE         512
+#define MAX_LIGNE         1024
 #define MAX_CONNEXIONS    256
 #define MAX_ARGS          200
 #define MAX_CMD           56
+#define MAX_LIST          512
 
 typedef struct {
   struct broadReturn br;
@@ -37,11 +38,37 @@ void beacon(void *pack){
     close(br->sfd);
 }
 
+
+int cmdHandler(char * cmd) {
+    if (strcmp("START", cmd) == 0) {
+      gameStarted = 1;
+      printf("\033[0;34mGAME IS STARTING\n\033[0m");
+      sleep(1);
+      printf("\033[0;34m3\n\033[0m");
+      sleep(1);
+      printf("\033[0;34m2\n\033[0m");
+      sleep(1);
+      printf("\033[0;34m1\n\033[0m");
+      sleep(1);
+
+      return 1;
+    }
+
+    if (strcmp("STOP", cmd) == 0) {
+    
+    // TODO
+    return 1;
+    }
+
+    return 0;
+
+}
+
 void clientChat(void *pack) {
     balise_cotcp *b = pack;
     char args[MAX_ARGS];
     char ligne[MAX_LIGNE];
-    char list[MAX_LIGNE];
+    char list[MAX_LIST];
     char buffer[MAX_LIGNE];
     int statut, cpt=0;
 
@@ -72,9 +99,14 @@ void clientChat(void *pack) {
         }
 
         printf("%d %s\n", cpt, list);
+        
+        sprintf(buffer, "JOUEURS (%d) %s\r\n", cpt, list);
+        for(int i = 0; i<=nbClients; i++) {
+          if (listClients[i].connected) {
+            write(listClients[i].s, buffer, strlen(buffer));
+          }
+        }
 
-        fprintf(dialogue, "JOUEURS (%d) %s\r\n", cpt, list);
-        fflush(dialogue);
         memset(list, 0, sizeof(list));
         cpt = 0;
 
@@ -82,13 +114,21 @@ void clientChat(void *pack) {
 
       statut = sscanf(ligne, "MSG %[0-9a-zA-Z ]", args);
       if (statut == 1) {
-        sprintf(buffer, "MSGFROM %s %s\n", listClients[b->i].pseudo, args);
+        sprintf(buffer, "MSGFROM %s\r\nMSG %s\n", listClients[b->i].pseudo, args);
         for(int i = 0; i<=nbClients; i++) {
           if (listClients[i].connected) {
             write(listClients[i].s, buffer, strlen(buffer));
           }
         }
       }
+      
+      statut = sscanf(ligne, "CMD %s", args);
+      if (statut == 1) {
+        if(!cmdHandler(args)) {
+          printf("unknown cmd");
+        } 
+      }
+
     }
 
     /* Fin dialogue */
@@ -98,12 +138,16 @@ void clientChat(void *pack) {
 
 }
 
+
 int saveTCP(int s) {
     balise_cotcp b;
     if (nbClients < MAX_CONNEXIONS) {
       b.s = s;
       b.i = nbClients;
       b.connected = 0;
+
+      
+
       launchThread(clientChat, &b, sizeof(b));
       listClients[nbClients] = b;
       nbClients++;
