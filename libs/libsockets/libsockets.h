@@ -19,11 +19,14 @@
 
 /* DEFINE  */
 #define MAX_SERVER      50 // maximum de serveur possible de stocker dans le serveur
+<<<<<<< HEAD
 #define MAX_TAMPON      800 //taille maximum des messages pour la discussion avec le serveur en TCP
 #define MAX_CONNEXIONS  256
 #define MAX_LIGNE       512
+=======
+#define MAX_TAMPON      200 //taille maximum des messages pour la discussion avec le serveur en TCP
+>>>>>>> 50f01ecc5d48e72e52d454de206d59074aac6b9e
 #define MAX_PSEUDO      64
-
 /* STRUCTURES  */
 struct broadReturn {
     int sfd;
