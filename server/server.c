@@ -38,26 +38,32 @@ void beacon(void *pack){
     close(br->sfd);
 }
 
+void controlsHandler() {
+    /* écoute udp  */
+  
+    
+}
+
 
 int cmdHandler(char * cmd) {
     if (strcmp("START", cmd) == 0) {
       gameStarted = 1;
-      printf("\033[0;34mGAME IS STARTING\n\033[0m");
+      printf("\033[0;36m(INFO) --- GAME IS STARTING\n\033[0m");
       sleep(1);
-      printf("\033[0;34m3\n\033[0m");
+      printf("\033[0;36m(INFO) --- 3\n\033[0m");
       sleep(1);
-      printf("\033[0;34m2\n\033[0m");
+      printf("\033[0;36m(INFO) --- 2\n\033[0m");
       sleep(1);
-      printf("\033[0;34m1\n\033[0m");
+      printf("\033[0;36m(INFO) --- 1\n\033[0m");
       sleep(1);
 
       return 1;
     }
 
     if (strcmp("STOP", cmd) == 0) {
-    
-    // TODO
-    return 1;
+
+      // TODO
+      return 1;
     }
 
     return 0;
@@ -79,7 +85,7 @@ void clientChat(void *pack) {
     if(dialogue==NULL){ perror("gestionClient.fdopen"); exit(EXIT_FAILURE); }
     
     /* Bonjour */
-    printf("\033[0;32mClient %d connected\033[0m\n", b->i);
+    printf("\033[0;32m(CONNECTION) client %d connected\033[0m\n", b->i);
 
     /* Traitement des commandes */
     while (fgets(ligne, MAX_LIGNE, dialogue) != NULL) {
@@ -98,7 +104,7 @@ void clientChat(void *pack) {
           }
         }
 
-        printf("%d %s\n", cpt, list);
+        printf("\033[0;36m(INFO) players : (%d) %s\033[0m\n", cpt, list);
         
         sprintf(buffer, "JOUEURS (%d) %s\r\n", cpt, list);
         for(int i = 0; i<=nbClients; i++) {
@@ -112,8 +118,9 @@ void clientChat(void *pack) {
 
       }
 
-      statut = sscanf(ligne, "MSG %[0-9a-zA-Z ]", args);
+      statut = sscanf(ligne, "MSG %[^\n]", args);
       if (statut == 1) {
+        printf("\033[0;35m(CHAT) %s: %s\033[0m\n", listClients[b->i].pseudo, args);
         sprintf(buffer, "MSGFROM %s\r\nMSG %s\n", listClients[b->i].pseudo, args);
         for(int i = 0; i<=nbClients; i++) {
           if (listClients[i].connected) {
@@ -125,7 +132,7 @@ void clientChat(void *pack) {
       statut = sscanf(ligne, "CMD %s", args);
       if (statut == 1) {
         if(!cmdHandler(args)) {
-          printf("unknown cmd");
+          printf("\033[0;31m(ERROR) client %d: unknown cmd: %s\033[0m\n", b->i, args);
         } 
       }
 
@@ -134,7 +141,7 @@ void clientChat(void *pack) {
     /* Fin dialogue */
     listClients[b->i].connected = 0;
     fclose(dialogue);
-    printf("\033[0;31mClient %d disconnected\033[0m\n", b->i);
+    printf("\033[0;31m(DISCONNECTION) client %d disconnected\033[0m\n", b->i);
 
 }
 
@@ -153,7 +160,7 @@ int saveTCP(int s) {
       nbClients++;
       return 0;
     }
-    printf("\033[0;31mError: Maximum number of connections has been reached\033[0m\n");
+    printf("\033[0;31m(ERROR) Maximum number of connections has been reached\033[0m\n");
     return -1;
 }
 
