@@ -16,11 +16,11 @@
 #include <poll.h>
 #include <netinet/tcp.h>
 #include <stdbool.h>
+#include <sys/ioctl.h>
 
 /* DEFINE  */
 #define MAX_SERVER      50 // maximum de serveur possible de stocker dans le serveur
 #define MAX_TAMPON      800 //taille maximum des messages pour la discussion avec le serveur en TCP
-#define MAX_TAMPON      200 //taille maximum des messages pour la discussion avec le serveur en TCP
 #define MAX_PSEUDO      64
 /* STRUCTURES  */
 struct broadReturn {
@@ -46,6 +46,8 @@ typedef struct server_s{
 	char nom_brut[10];
 	char nom_Server[10];
 	char portTCP[5];
+	int socketTCP;
+	FILE *fileSock;
 	struct in_addr addr_Server;
 }server_t;
 
@@ -55,7 +57,6 @@ void sendBroadcast(int, struct sockaddr_storage, char *, int); //envoie message 
 server_t pollEcoute(int); //ecoute le port et l'entree standard pour choisir le serveur de jeu avec poll
 server_t udpEcoute(); //configuration de l'ecoute du broadcast udp
 int connexionServ(server_t); // initialisation de la connexion TCP avec le serveur
-void discussionTCP(int,int *); //envoie des commandes avec le serveur et reception de ses réponses
 int initialisationServeur(char *,int);
 void boucleServeur(void *);
 
