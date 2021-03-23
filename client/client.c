@@ -42,12 +42,14 @@ void communicationServeur(void *pack){
 		if(nb<0){ perror("main.poll"); exit(EXIT_FAILURE); }
 		if((descripteurs[0].revents&POLLIN)!=0){
 			char cmd[MAX_TAMPON];
-			char args[MAX_LIGNE];
+			char args[MAX_TAMPON];
 			int reste;
 			if(ioctl(server->socketTCP,FIONREAD,&reste)<0 ||reste==0){ 
 				//fclose(fileSock);
 				statut=1; 
 			}
+			char msg[MAX_LIGNE];
+			memset(msg,0,MAX_LIGNE);
 			while(reste>0){
 				if(fgets(tampon,MAX_LIGNE,server->fileSock)==NULL){
 					statut=1;
@@ -68,15 +70,18 @@ void communicationServeur(void *pack){
 						fprintf(stdout,"%s",tampon);
 						fflush(stdout);
 					}
+					//TODO : Plus belle messagerie
 					if(strcmp(cmd,"MSGFROM")==0){
+						sprintf(msg,"<%s>",args);
 						fprintf(stdout,"%s",tampon);
 						fflush(stdout);
 					}
 					if(strcmp(cmd,"MSG")==0){
-						fprintf(stdout,"%s",tampon);
+						fprintf(stdout,"%s : %s\n",msg,args);
 						fflush(stdout);
 					}
 					reste-=strlen(tampon);
+					printf("reste = %d\n",reste);
 				}
 			}
 		}	
