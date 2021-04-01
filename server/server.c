@@ -14,6 +14,13 @@ typedef struct {
   balise_t b;
 } beaconPack;
 
+typedef struct {
+  int id;
+  int x;
+  int z;
+  int angle;
+} playerPosition;
+
 int gameStarted = 0;
 int nbClients = 0;
 
@@ -40,8 +47,19 @@ void beacon(void *pack){
 
 void controlsHandler() {
     /* écoute udp  */
-  
-    
+    int s;
+    s = udpEcoute(1331);
+
+    struct sockaddr_in addrClient;
+    socklen_t size = sizeof addrClient;
+    char buffer[MAX_LIGNE];
+    int nbBytes;
+    while(1) {
+      nbBytes = recvfrom(s, buffer, MAX_LIGNE-1, 0, (struct sockaddr *)&addrClient, &size);
+
+      buffer[nbBytes] = '\0';
+      printf("%s\n", buffer);
+    }
 }
 
 
@@ -57,7 +75,7 @@ int cmdHandler(char * cmd) {
       printf("\033[0;36m(INFO) --- 1\n\033[0m");
       sleep(1);
       
-      launchThread(controlsHandler);
+      launchThread(controlsHandler, NULL, 0); 
 
       return 1;
     }
