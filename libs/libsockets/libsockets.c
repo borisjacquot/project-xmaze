@@ -92,77 +92,8 @@ void sendBroadcast(int sfd, struct sockaddr_storage broad, char * msg, int size)
     printf("\033[0;36m(INFO) sent %d bytes in broadcast mode\033[0m\n",numbytes);
 }
 
-/* === POLL SUR ENTREE STANDARD ET LA SOCKET POUR AFFICHAGE ET CHOIX DU SERVEUR === */
-server_t pollEcoute(int s){
-    struct pollfd descripteurs[2];
-    descripteurs[0].fd=s;
-    descripteurs[0].events=POLLIN;
-    descripteurs[1].fd=0;
-    descripteurs[1].events=POLLIN;
-    struct sockaddr_in other_socket;
-    int choix;
-	char buffer[50];
-	int keepRunning = 1;
-	server_t tab[MAX_SERVER];
-	int nbServ=0;
-	printf("Entrez le numero du serveur souhaite a n'importe quel moment\n");
-	while(keepRunning){
-		int nb = poll(descripteurs,2,-1);
-		if(nb<0){
-			perror("udpEcoute.poll");
-			exit(EXIT_FAILURE);
-		}
-		if((descripteurs[0].revents&POLLIN)!=0){
-			memset(buffer,0,sizeof(buffer));
-			unsigned sock_len=sizeof(struct sockaddr);
-			recvfrom(s, buffer, sizeof(buffer)-1, 0, (struct sockaddr *)&other_socket, &sock_len);
-			char name[50];
-			strcpy(name,buffer);
-			for(long unsigned int i=0;i<sizeof(name)-1;i++){
-				name[i]=name[i+2];
-			}
-			int flag=0;
-			if(nbServ!=0){
-				for(int i=0; i<=nbServ;i++){
-					/* === si le serveur est deja trouve, on ajoute pas le server dans le tableau ===*/
-					if(strcmp(name,tab[i].nom_Server)==0){
-						flag=1;
-					}
-				}
-			}
-			if(flag==0){
-				nbServ++;
-				strcpy(tab[nbServ].nom_brut,buffer);
-				int port = buffer[0] + (buffer[1]<<8);
-				snprintf(tab[nbServ].portTCP,5,"%d",port);
-				/*	
-				for(long unsigned int i=0;i<sizeof(buffer)-1;i++){
-					buffer[i]=buffer[i+2];
-				}
-				*/
-				strcpy(tab[nbServ].nom_Server,name);
-				tab[nbServ].addr_Server=other_socket.sin_addr;
-				printf("%d) La partie de jeu %s est sur le port : %d\n",nbServ,name,port);
-			}
-		}
-		if((descripteurs[1].revents&POLLIN)!=0){
-			if(nbServ!=0){
-				int taille=read(0,buffer,sizeof(buffer));
-				if(taille<0) break;
-				choix=atoi(buffer);
-				while(choix>nbServ || choix<=0){
-					printf("Veuillez entrer votre choix de serveur (entre 1 et %d) : ",nbServ);
-					scanf("%d",&choix);
-				}
-				keepRunning=0;
-			}
-		}
-	}
-	return tab[choix];
-}
-
 /* Fonction d'ecoute du broadcast UDP sur le port 1337 */
-server_t udpEcoute(int port){
+int udpEcoute(int port){
 
 	struct sockaddr_in mysocket;
 	int s;
@@ -189,11 +120,7 @@ server_t udpEcoute(int port){
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Lecture du port %d ...\n",port);
-	server_t infoServer=pollEcoute(s);
-	close(s);
-
-	return infoServer;
+	return s;
 }
 /* Initialisation de la connexion TCP avec le serveur */
 int connexionServ(server_t Serveur){

@@ -54,8 +54,7 @@ typedef struct server_s{
 /* PROTOTYPES  */
 struct broadReturn setBroadcast(char *); //config les sockets piur broadcast udp
 void sendBroadcast(int, struct sockaddr_storage, char *, int); //envoie message broadcast
-server_t pollEcoute(int); //ecoute le port et l'entree standard pour choisir le serveur de jeu avec poll
-server_t udpEcoute(); //configuration de l'ecoute du broadcast udp
+int udpEcoute(); //configuration de l'ecoute du broadcast udp
 int connexionServ(server_t); // initialisation de la connexion TCP avec le serveur
 int initialisationServeur(char *,int);
 void boucleServeur(void *);
