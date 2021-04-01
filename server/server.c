@@ -46,7 +46,7 @@ void controlsHandler() {
 
 
 int cmdHandler(char * cmd) {
-    if (strcmp("START", cmd) == 0) {
+    if (strcmp("START", cmd) == 0 && gameStarted == 0) {
       gameStarted = 1;
       printf("\033[0;36m(INFO) --- GAME IS STARTING\n\033[0m");
       sleep(1);
@@ -56,6 +56,8 @@ int cmdHandler(char * cmd) {
       sleep(1);
       printf("\033[0;36m(INFO) --- 1\n\033[0m");
       sleep(1);
+      
+      launchThread(controlsHandler);
 
       return 1;
     }

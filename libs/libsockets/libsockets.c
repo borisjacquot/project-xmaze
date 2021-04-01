@@ -89,7 +89,7 @@ void sendBroadcast(int sfd, struct sockaddr_storage broad, char * msg, int size)
         exit(1);
     }
 
-    printf("\033[0;36mINFO: sent %d bytes in broadcast mode\033[0m\n",numbytes);
+    printf("\033[0;36m(INFO) sent %d bytes in broadcast mode\033[0m\n",numbytes);
 }
 
 /* === POLL SUR ENTREE STANDARD ET LA SOCKET POUR AFFICHAGE ET CHOIX DU SERVEUR === */
@@ -285,4 +285,41 @@ void boucleServeur(void *pack) {
     }
 }
 
+int initSocketUDP (char * service) {
+    struct addrinfo precisions, *resultat, *origine;
+    int s, statut;
 
+    memset(&precisions,0,sizeof precisions);
+    precisions.ai_family=AF_UNSPEC;
+    precisions.ai_socktype=SOCK_DGRAM;
+    precisions.ai_flags=AI_PASSIVE;
+
+    statut=getaddrinfo(NULL,service,&precisions,&origine);
+    if(statut<0){ perror("initialisationSocketUDP.getaddrinfo"); exit(EXIT_FAILURE); }
+    
+    struct addrinfo *p;
+
+    for(p=origine,resultat=origine;p!=NULL;p=p->ai_next)
+      if(p->ai_family==AF_INET){ resultat=p; break; }
+
+    /* Creation d'une socket */
+    s=socket(resultat->ai_family,resultat->ai_socktype,resultat->ai_protocol);
+    if(s<0){ perror("initialisationSocketUDP.socket"); exit(EXIT_FAILURE); }
+
+    /* Options utiles */
+    int vrai=1;
+    if(setsockopt(s,SOL_SOCKET,SO_REUSEADDR,&vrai,sizeof(vrai))<0){
+      perror("initialisationServeurUDPgenerique.setsockopt (REUSEADDR)");
+      exit(-1);
+    }
+
+    /* Specification de l'adresse de la socket */
+    statut=bind(s,resultat->ai_addr,resultat->ai_addrlen);
+    if(statut<0) {perror("initialisationServeurUDP.bind"); exit(-1);}
+
+    /* Liberation de la structure d'informations */
+    freeaddrinfo(origine);
+
+    return s;
+
+}
