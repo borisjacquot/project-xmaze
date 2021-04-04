@@ -47,6 +47,7 @@ typedef struct server_s{
 	char nom_Server[10];
 	char portTCP[5];
 	int socketTCP;
+	char id;
 	FILE *fileSock;
 	struct in_addr addr_Server;
 }server_t;

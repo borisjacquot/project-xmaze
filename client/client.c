@@ -1,5 +1,6 @@
 #include "libsockets.h"
 #include "libthreads.h"
+#include "libgraph.h"
 #include "common.h"
 
 #define PORT 1337
@@ -7,6 +8,11 @@
 
 struct sigaction action;
 int statut=0;
+
+typedef struct envTouche_s{
+	uint8_t id;
+	uint8_t touche;
+}envTouche_t;
 
 void hand(int sig){
 	if(sig==SIGINT){
@@ -37,6 +43,7 @@ server_t pollEcoute(int s){
 		if((descripteurs[0].revents&POLLIN)!=0){
 			memset(buffer,0,sizeof(buffer));
 			unsigned sock_len=sizeof(struct sockaddr);
+			// TODO : Modif
 			recvfrom(s, buffer, sizeof(buffer)-1, 0, (struct sockaddr *)&other_socket, &sock_len);
 			char name[50];
 			strcpy(name,buffer);
@@ -81,6 +88,36 @@ server_t pollEcoute(int s){
 		}
 	}
 	return tab[choix];
+}
+
+void envoieTouches(void *pack){
+	server_t *server=pack;
+	int socket=udpEcoute(atoi(server->portTCP)+1);
+	unsigned char resultat,fenetre,quitter;
+	int touche;
+	envTouche_t envoi;
+	envoi.id=server->id;
+	struct sockaddr_in Addr;
+	socklen_t size = sizeof Addr;
+	//TODO : Modifier avec var globales comme pour labyrinthe.c
+	resultat=creerFenetre(640,480,"Test labyrinthe");
+	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
+	while(statut!=1){
+		int evenement=attendreEvenement(&touche,&fenetre,&quitter);
+		if(!evenement){ usleep(10000); continue; };
+		if(touche){
+			if(touche==TOUCHE_GAUCHE) { envoi.touche=0b00000001; printf("GAUCHE\n"); }
+			if(touche==TOUCHE_DROITE) { envoi.touche=0b00000010; }
+			if(touche==TOUCHE_HAUT) { envoi.touche=0b00000100; }
+			if(touche==TOUCHE_BAS) { envoi.touche=0b00001000; }
+			if(touche==TOUCHE_ESPACE) { envoi.touche=0b00010000; }
+		}
+		if(quitter==1){ envoi.touche=0b00100000; break; }
+		sendto(socket,(void *)&envoi,sizeof(envTouche_t),0,(struct sockaddr *)&Addr,size);
+	}
+	fermerFenetre();
+	close(socket);
+	printf("Fin de thread envoie des touches\n");
 }
 
 void communicationServeur(void *pack){
@@ -134,6 +171,7 @@ void communicationServeur(void *pack){
 				if(nb>0){
 					//Traitement des commandes d'entrée
 					if(strcmp(cmd,"CONNECTE")==0){
+						server->id=(char)atoi(args);
 						fprintf(stdout,"%s",tampon);
 						fflush(stdout);
 					}
@@ -141,7 +179,6 @@ void communicationServeur(void *pack){
 						fprintf(stdout,"%s",tampon);
 						fflush(stdout);
 					}
-					//TODO : Plus belle messagerie
 					if(strcmp(cmd,"MSGFROM")==0){
 						strcpy(pseudo,args);
 						fflush(stdout);
@@ -166,6 +203,7 @@ void communicationServeur(void *pack){
 			if(nb>0){
 				if(strcmp(cmd,"/start")==0){
 					fprintf(server->fileSock,"CMD START\n");
+					launchThread(envoieTouches,server,sizeof(server));
 					fflush(server->fileSock);
 					ecrit=1;
 				}
@@ -197,6 +235,7 @@ int main(){
 	/* === Informations sur le serveur choisi === */
 	printf("Le port de la partie choisie est : %s\n",serv.portTCP);
 	printf("Adresse de l'hote : %s\n",inet_ntoa(serv.addr_Server));
+	printf("Port UDP de l'envoi des touches : %d\n",atoi(serv.portTCP)+1);
 
 	/* === Connexion TCP client : utilisation du cours === */
 	serv.socketTCP=connexionServ(serv);
