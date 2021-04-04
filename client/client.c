@@ -92,13 +92,15 @@ server_t pollEcoute(int s){
 
 void envoieTouches(void *pack){
 	server_t *server=pack;
+	struct sockaddr_in Addr;
 	int socket=udpEcoute(atoi(server->portTCP)+1);
+	Addr.sin_addr=server->addr_Server;
 	unsigned char resultat,fenetre,quitter;
 	int touche;
 	envTouche_t envoi;
 	envoi.id=server->id;
-	struct sockaddr_in Addr;
-	socklen_t size = sizeof Addr;
+	socklen_t size = sizeof(struct sockaddr_in);
+	char buf[MAX_LIGNE]={'S','a','l','u','t','\n'};
 	//TODO : Modifier avec var globales comme pour labyrinthe.c
 	resultat=creerFenetre(640,480,"Test labyrinthe");
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
@@ -113,7 +115,12 @@ void envoieTouches(void *pack){
 			if(touche==TOUCHE_ESPACE) { envoi.touche=0b00010000; }
 		}
 		if(quitter==1){ envoi.touche=0b00100000; break; }
-		sendto(socket,(void *)&envoi,sizeof(envTouche_t),0,(struct sockaddr *)&Addr,size);
+		if((sendto(socket,(void *)&envoi,sizeof(envTouche_t),0,(struct sockaddr *)&Addr,size))==-1){
+			perror("sendto");
+		}
+		if((sendto(socket,buf,MAX_LIGNE-1,0,(struct sockaddr *)&Addr,size))==-1){
+			perror("sendto2");
+		}
 	}
 	fermerFenetre();
 	close(socket);
@@ -122,6 +129,7 @@ void envoieTouches(void *pack){
 
 void communicationServeur(void *pack){
 	server_t *server=pack;
+	server_t serv=*server;
 
 	//FILE *fileSock=fdopen(server->socketTCP,"a+");
 	char tampon[MAX_TAMPON];
@@ -203,7 +211,7 @@ void communicationServeur(void *pack){
 			if(nb>0){
 				if(strcmp(cmd,"/start")==0){
 					fprintf(server->fileSock,"CMD START\n");
-					launchThread(envoieTouches,server,sizeof(server));
+					launchThread(envoieTouches,&serv,sizeof(serv));
 					fflush(server->fileSock);
 					ecrit=1;
 				}
@@ -230,7 +238,7 @@ int main(){
 	
 	/* recuperation du broadcast UDP des serveurs et choix d'un serveur */
 	server_t serv;
-	int socket = udpEcoute(PORT);
+	int socket = udpEcoute(PORT,NULL);
 	serv=pollEcoute(socket);
 	/* === Informations sur le serveur choisi === */
 	printf("Le port de la partie choisie est : %s\n",serv.portTCP);
