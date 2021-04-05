@@ -168,12 +168,19 @@ void clientChat(void *pack) {
 
 int saveTCP(int s) {
     balise_cotcp b;
+    struct sockaddr_in address;
+    char ip[16];
     if (nbClients < MAX_CONNEXIONS) {
       b.s = s;
       b.i = nbClients;
       b.connected = 0;
-
       
+      //TODO ça fait de la merde
+      bzero(&address, sizeof(address));
+      socklen_t len = sizeof(address);
+      getsockname(s, (struct sockaddr *) &address, &len);
+      inet_ntop(AF_INET, &address.sin_addr, ip, sizeof(ip));
+      printf("IP ADDRESS : %s\n", ip);
 
       launchThread(clientChat, &b, sizeof(b));
       listClients[nbClients] = b;

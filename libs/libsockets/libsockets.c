@@ -187,6 +187,10 @@ int initialisationServeur(char *service,int connexions){
     /* Specification de l'adresse de la socket */
     statut=bind(s,resultat->ai_addr,resultat->ai_addrlen);
     if(statut<0) return -1;
+    
+    struct sockaddr_in *addr_in = (struct sockaddr_in *) resultat;
+    char *address = inet_ntoa(addr_in->sin_addr);
+    printf("IP ADDRESS2 : %s\n", address);
 
     /* Liberation de la structure d'informations */
     freeaddrinfo(origine);
