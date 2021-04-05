@@ -93,7 +93,7 @@ void sendBroadcast(int sfd, struct sockaddr_storage broad, char * msg, int size)
 }
 
 /* Fonction d'ecoute du broadcast UDP sur le port 1337 */
-int udpEcoute(int port){
+int udpEcoute(int port,struct sockaddr_in *adresse){
 
 	struct sockaddr_in mysocket;
 	int s;
@@ -119,7 +119,7 @@ int udpEcoute(int port){
 		perror("udpEcoute.bind");
 		exit(EXIT_FAILURE);
 	}
-
+	adresse=&mysocket;
 	return s;
 }
 /* Initialisation de la connexion TCP avec le serveur */
