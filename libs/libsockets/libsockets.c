@@ -121,6 +121,15 @@ int udpEcoute(int port){
 	}
 	return s;
 }
+
+struct sockaddr_in createAddr(int port,struct in_addr addr){
+	struct sockaddr_in Ret;
+	Ret.sin_addr=addr;
+	Ret.sin_port=htons(port);
+	Ret.sin_family=AF_INET;
+	return Ret;
+}
+
 /* Initialisation de la connexion TCP avec le serveur */
 int connexionServ(server_t Serveur){
 	struct addrinfo precisions,*resultat,*origine;

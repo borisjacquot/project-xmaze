@@ -56,6 +56,7 @@ typedef struct server_s{
 struct broadReturn setBroadcast(char *); //config les sockets piur broadcast udp
 void sendBroadcast(int, struct sockaddr_storage, char *, int); //envoie message broadcast
 int udpEcoute(int); //configuration de l'ecoute du broadcast udp
+struct sockaddr_in createAddr(int,struct in_addr);
 int connexionServ(server_t); // initialisation de la connexion TCP avec le serveur
 int initialisationServeur(char *,int);
 void boucleServeur(void *);
