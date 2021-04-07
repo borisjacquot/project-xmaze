@@ -92,15 +92,19 @@ server_t pollEcoute(int s){
 
 void envoieTouches(void *pack){
 	server_t *server=pack;
-	struct sockaddr_in Addr;
-	int socket=udpEcoute(atoi(server->portTCP)+1);
-	Addr.sin_addr=server->addr_Server;
+	struct broadReturn br;
+	//TODO : a modifier
+	char buf[4];
+	sprintf(buf,"%d",atoi(server->portTCP)+1);
+	br=setBroadcast(buf);
+	//struct sockaddr_in Addr;
+	//int socket=udpEcoute(atoi(server->portTCP)+1);
+	//Addr.sin_addr=server->addr_Server;
 	unsigned char resultat,fenetre,quitter;
 	int touche;
 	envTouche_t envoi;
 	envoi.id=server->id;
-	socklen_t size = sizeof(struct sockaddr_in);
-	char buf[MAX_LIGNE]={'S','a','l','u','t','\n'};
+	socklen_t size = sizeof(struct sockaddr_storage);
 	//TODO : Modifier avec var globales comme pour labyrinthe.c
 	resultat=creerFenetre(640,480,"Test labyrinthe");
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
@@ -115,15 +119,12 @@ void envoieTouches(void *pack){
 			if(touche==TOUCHE_ESPACE) { envoi.touche=0b00010000; }
 		}
 		if(quitter==1){ envoi.touche=0b00100000; break; }
-		if((sendto(socket,(void *)&envoi,sizeof(envTouche_t),0,(struct sockaddr *)&Addr,size))==-1){
-			perror("sendto");
-		}
-		if((sendto(socket,buf,MAX_LIGNE-1,0,(struct sockaddr *)&Addr,size))==-1){
-			perror("sendto2");
+		if((sendto(br.sfd,(void *)&envoi,sizeof(envTouche_t),0,(struct sockaddr *)&br.broad,size))==-1){
+			perror("envoieTouches.sendto");
 		}
 	}
 	fermerFenetre();
-	close(socket);
+	close(br.sfd);
 	printf("Fin de thread envoie des touches\n");
 }
 
@@ -238,7 +239,7 @@ int main(){
 	
 	/* recuperation du broadcast UDP des serveurs et choix d'un serveur */
 	server_t serv;
-	int socket = udpEcoute(PORT,NULL);
+	int socket = udpEcoute(PORT);
 	serv=pollEcoute(socket);
 	/* === Informations sur le serveur choisi === */
 	printf("Le port de la partie choisie est : %s\n",serv.portTCP);
