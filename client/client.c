@@ -98,6 +98,7 @@ void envoieTouches(void *pack){
 	Addr=createAddr(atoi(server->portTCP)+1,server->addr_Server);
 	unsigned char resultat,fenetre,quitter;
 	int touche;
+	int recu;
 	envTouche_t envoi;
 	envoi.id=server->id;
 	socklen_t size = sizeof(struct sockaddr_in);
@@ -105,18 +106,21 @@ void envoieTouches(void *pack){
 	resultat=creerFenetre(640,480,"Test labyrinthe");
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
 	while(statut!=1){
+		recu=0;
 		int evenement=attendreEvenement(&touche,&fenetre,&quitter);
 		if(!evenement){ usleep(10000); continue; };
 		if(touche){
-			if(touche==TOUCHE_GAUCHE) { envoi.touche=0b00000001; }
-			if(touche==TOUCHE_DROITE) { envoi.touche=0b00000010; }
-			if(touche==TOUCHE_HAUT) { envoi.touche=0b00000100; }
-			if(touche==TOUCHE_BAS) { envoi.touche=0b00001000; }
-			if(touche==TOUCHE_ESPACE) { envoi.touche=0b00010000; }
+			if(touche==TOUCHE_GAUCHE) { envoi.touche=0b00000001; recu=1; }
+			if(touche==TOUCHE_DROITE) { envoi.touche=0b00000010; recu=1; }
+			if(touche==TOUCHE_HAUT) { envoi.touche=0b00000100; recu=1; }
+			if(touche==TOUCHE_BAS) { envoi.touche=0b00001000; recu=1; }
+			if(touche==TOUCHE_ESPACE) { envoi.touche=0b00010000; recu=1; }
 		}
 		if(quitter==1){ envoi.touche=0b00100000; break; }
-		if((sendto(socket,(void *)&envoi,sizeof(envTouche_t),0,(struct sockaddr *)&Addr,size))==-1){
-			perror("envoieTouches.sendto");
+		if(recu){
+			if((sendto(socket,(void *)&envoi,sizeof(envTouche_t),0,(struct sockaddr *)&Addr,size))==-1){
+				perror("envoieTouches.sendto");
+			}
 		}
 	}
 	fermerFenetre();
@@ -192,6 +196,11 @@ void communicationServeur(void *pack){
 						fprintf(stdout,"<%s> : %s",pseudo,args);
 						fflush(stdout);
 					}
+					if(strcmp(cmd,"CMD")==0){
+						if(strcmp(args,"START")==0){
+							launchThread(envoieTouches,&serv,sizeof(serv));
+						}
+					}
 					reste-=strlen(tampon);
 				}
 			}
@@ -208,7 +217,6 @@ void communicationServeur(void *pack){
 			if(nb>0){
 				if(strcmp(cmd,"/start")==0){
 					fprintf(server->fileSock,"CMD START\n");
-					launchThread(envoieTouches,&serv,sizeof(serv));
 					fflush(server->fileSock);
 					ecrit=1;
 				}
