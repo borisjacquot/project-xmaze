@@ -22,17 +22,18 @@ void hand(int sig){
 
 /* === POLL SUR ENTREE STANDARD ET LA SOCKET POUR AFFICHAGE ET CHOIX DU SERVEUR === */
 server_t pollEcoute(int s){
-    struct pollfd descripteurs[2];
-    descripteurs[0].fd=s;
-    descripteurs[0].events=POLLIN;
-    descripteurs[1].fd=0;
-    descripteurs[1].events=POLLIN;
-    struct sockaddr_in other_socket;
-    int choix;
-	char buffer[50];
-	int keepRunning = 1;
-	server_t tab[MAX_SERVER];
-	int nbServ=0;
+    	struct pollfd descripteurs[2];
+    	descripteurs[0].fd=s;
+    	descripteurs[0].events=POLLIN;
+    	descripteurs[1].fd=0;
+    	descripteurs[1].events=POLLIN;
+    	//struct sockaddr_in other_socket;
+    	int choix;
+    	char buffer[50];
+	char servAddr[50];
+    	int keepRunning = 1;
+    	server_t tab[MAX_SERVER];
+    	int nbServ=0;
 	printf("Entrez le numero du serveur souhaite a n'importe quel moment\n");
 	while(keepRunning){
 		int nb = poll(descripteurs,2,-1);
@@ -42,9 +43,11 @@ server_t pollEcoute(int s){
 		}
 		if((descripteurs[0].revents&POLLIN)!=0){
 			memset(buffer,0,sizeof(buffer));
-			unsigned sock_len=sizeof(struct sockaddr);
+			memset(servAddr,0,sizeof(servAddr));
+			//unsigned sock_len=sizeof(struct sockaddr);
 			// TODO : Modif
-			recvfrom(s, buffer, sizeof(buffer)-1, 0, (struct sockaddr *)&other_socket, &sock_len);
+			receptionServer(s,buffer,servAddr,sizeof(buffer),sizeof(servAddr));
+			//recvfrom(s, buffer, sizeof(buffer)-1, 0, (struct sockaddr *)&other_socket, &sock_len);
 			char name[50];
 			strcpy(name,buffer);
 			for(long unsigned int i=0;i<sizeof(name)-1;i++){
@@ -70,7 +73,8 @@ server_t pollEcoute(int s){
 				}
 				*/
 				strcpy(tab[nbServ].nom_Server,name);
-				tab[nbServ].addr_Server=other_socket.sin_addr;
+				strcpy(tab[nbServ].addr_Server,servAddr);
+				//tab[nbServ].addr_Server=other_socket.sin_addr;
 				printf("%d) La partie de jeu %s est sur le port : %d\n",nbServ,name,port);
 			}
 		}
@@ -89,7 +93,11 @@ server_t pollEcoute(int s){
 	}
 	return tab[choix];
 }
-
+/*
+void gestionJeu(void *pack){
+	unsigned char *fenetre=pack;
+}
+*/
 void envoieTouches(void *pack){
 	server_t *server=pack;
 	struct sockaddr_in Addr;
@@ -116,7 +124,7 @@ void envoieTouches(void *pack){
 			if(touche==TOUCHE_BAS) { envoi.touche=0b00001000; recu=1; }
 			if(touche==TOUCHE_ESPACE) { envoi.touche=0b00010000; recu=1; }
 		}
-		if(quitter==1){ envoi.touche=0b00100000; break; }
+		if(quitter==1){ envoi.touche=0b00100000; printf("Quitter\n"); break; }
 		if(recu){
 			if((sendto(socket,(void *)&envoi,sizeof(envTouche_t),0,(struct sockaddr *)&Addr,size))==-1){
 				perror("envoieTouches.sendto");
@@ -247,7 +255,7 @@ int main(){
 	serv=pollEcoute(socket);
 	/* === Informations sur le serveur choisi === */
 	printf("Le port de la partie choisie est : %s\n",serv.portTCP);
-	printf("Adresse de l'hote : %s\n",inet_ntoa(serv.addr_Server));
+	printf("Adresse de l'hote : %s\n",serv.addr_Server);
 	printf("Port UDP de l'envoi des touches : %d\n",atoi(serv.portTCP)+1);
 
 	/* === Connexion TCP client : utilisation du cours === */

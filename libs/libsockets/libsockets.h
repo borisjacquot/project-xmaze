@@ -40,14 +40,15 @@ typedef struct server_s{
 	int socketTCP;
 	char id;
 	FILE *fileSock;
-	struct in_addr addr_Server;
+	char addr_Server[50];
 }server_t;
 
 /* PROTOTYPES  */
 struct broadReturn setBroadcast(char *); //config les sockets piur broadcast udp
 void sendBroadcast(int, struct sockaddr_storage, char *, int); //envoie message broadcast
 int udpEcoute(int); //configuration de l'ecoute du broadcast udp
-struct sockaddr_in createAddr(int,struct in_addr);
+struct sockaddr_in createAddr(int,char *);
+void receptionServer(int,char *,char *,int,int);
 int connexionServ(server_t); // initialisation de la connexion TCP avec le serveur
 int initialisationServeur(char *,int);
 void boucleServeur(void *);

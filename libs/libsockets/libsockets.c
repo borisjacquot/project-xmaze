@@ -122,12 +122,21 @@ int udpEcoute(int port){
 	return s;
 }
 
-struct sockaddr_in createAddr(int port,struct in_addr addr){
+struct sockaddr_in createAddr(int port,char *addr){
 	struct sockaddr_in Ret;
-	Ret.sin_addr=addr;
+	inet_aton(addr,&Ret.sin_addr);
 	Ret.sin_port=htons(port);
 	Ret.sin_family=AF_INET;
 	return Ret;
+}
+
+//Reception adresse serveur
+void receptionServer(int socket,char *buffer, char *name,int bufferSize,int nameSize){
+	struct sockaddr_storage adresse;
+	unsigned len=sizeof(struct sockaddr);
+	recvfrom(socket, buffer, bufferSize-1,0,(struct sockaddr *)&adresse,&len);
+	getpeername(socket,(struct sockaddr *)&adresse,&len);
+	getnameinfo((struct sockaddr *)&adresse, len, name,nameSize,NULL,0,0);
 }
 
 /* Initialisation de la connexion TCP avec le serveur */
@@ -140,7 +149,7 @@ int connexionServ(server_t Serveur){
 	precisions.ai_family=AF_UNSPEC;
 	precisions.ai_socktype=SOCK_STREAM;
 
-	statut=getaddrinfo(inet_ntoa(Serveur.addr_Server),Serveur.portTCP,&precisions,&origine);
+	statut=getaddrinfo(Serveur.addr_Server,Serveur.portTCP,&precisions,&origine);
 	if(statut<0){ perror("connexionServ.getaddrinfo"); exit(EXIT_FAILURE); }
 	struct addrinfo *p;
 	for(p=origine,resultat=origine;p!=NULL;p=p->ai_next)
