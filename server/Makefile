@@ -5,7 +5,7 @@ SOURCES = $(wildcard *.c)
 OBJETS = $(SOURCES:.c=.o)
 CFLAGS = -Wall -Wextra -Werror -I ../libs/libsockets -I ../common -I ../libs/libthreads
 CIBLE = server
-BIBLIOTHEQUES = -L ../libs/libsockets -lsockets -L ../libs/libthreads -lthreads -pthread
+BIBLIOTHEQUES = -L ../libs/libsockets -lsockets -L ../libs/libthreads -lthreads -pthread -lm
 
 
 # Cible principale

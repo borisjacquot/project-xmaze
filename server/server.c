@@ -1,30 +1,10 @@
-#include "common.h"
-#include "libsockets.h"
-#include "libthreads.h"
-
-#define UDP_PORT          "1337"
-#define MAX_LIGNE         1024
-#define MAX_CONNEXIONS    256
-#define MAX_ARGS          200
-#define MAX_CMD           56
-#define MAX_LIST          512
-
-typedef struct {
-  struct broadReturn br;
-  balise_t b;
-} beaconPack;
-
-typedef struct {
-  int id;
-  int x;
-  int z;
-  int angle;
-} playerPosition;
+#include "server.h"
 
 int gameStarted = 0;
 int nbClients = 0;
 
 balise_cotcp listClients[MAX_CONNEXIONS];
+playerPosition positions[MAX_CONNEXIONS];
 
 /*
 void hand(int sig) {
@@ -47,24 +27,39 @@ void beacon(void *pack){
 
 void controlsHandler() {
     /* écoute udp  */
-    int s;
-    s = udpEcoute(1331);
+    int s, id, key;
+    s = udpEcoute(KEY_PORT);
 
     struct sockaddr_in addrClient;
     socklen_t size = sizeof addrClient;
     char buffer[MAX_LIGNE];
-    int nbBytes;
     while(1) {
-      nbBytes = recvfrom(s, buffer, MAX_LIGNE-1, 0, (struct sockaddr *)&addrClient, &size);
-
-      buffer[nbBytes] = '\0';
-      printf("%s\n", buffer);
+      recvfrom(s, buffer, MAX_CMD, 0, (struct sockaddr *)&addrClient, &size);
+      id = buffer[0];
+      key = buffer[1];
+      switch (key) {
+        case HAUT:
+          positions[id].x += 20*sin(2*M_PI*positions[id].angle/360);
+          positions[id].z += 20*cos(2*M_PI*positions[id].angle/360);
+          break;
+        case BAS:
+          positions[id].x -= 20*sin(2*M_PI*positions[id].angle/360);
+          positions[id].z -= 20*cos(2*M_PI*positions[id].angle/360);
+          break;
+        case GAUCHE:
+          positions[id].angle -= 5;
+          break;
+        case DROITE:
+          positions[id].angle += 5;
+          break;
+      }
+      printf("id: %d : %d %d %d ; %d\n", id, positions[id].x, positions[id].y, positions[id].z, positions[id].angle);
     }
 }
 
 
 int cmdHandler(char * cmd) {
-    if (strcmp("START", cmd) == 0 && gameStarted == 0) {
+    if (strcmp(START, cmd) == 0 && gameStarted == 0) {
       gameStarted = 1;
       printf("\033[0;36m(INFO) --- GAME IS STARTING\n\033[0m");
       sleep(1);
@@ -74,13 +69,20 @@ int cmdHandler(char * cmd) {
       sleep(1);
       printf("\033[0;36m(INFO) --- 1\n\033[0m");
       sleep(1);
-      
+
+      char start[MAX_CMD] = "CMD START\r\n";
+      for(int i = 0; i<=nbClients; i++) {
+          if (listClients[i].connected) {
+            write(listClients[i].s, start, strlen(start));
+          }
+      }
+
       launchThread(controlsHandler, NULL, 0); 
 
       return 1;
     }
 
-    if (strcmp("STOP", cmd) == 0) {
+    if (strcmp(STOP, cmd) == 0) {
 
       // TODO
       return 1;
@@ -165,11 +167,13 @@ void clientChat(void *pack) {
 
 }
 
+#define MAX_NOM   1024
 
 int saveTCP(int s) {
     balise_cotcp b;
-    struct sockaddr_in address;
-    socklen_t len;
+    playerPosition p;
+    struct sockaddr_storage address, address2;
+    socklen_t len, len2;
     if (nbClients < MAX_CONNEXIONS) {
       b.s = s;
       b.i = nbClients;
@@ -177,10 +181,22 @@ int saveTCP(int s) {
       
       len = sizeof(address);
       getpeername(s, (struct sockaddr*)&address, &len);
-      printf("IP : %s\n", inet_ntoa(address.sin_addr));
+      char nom[MAX_NOM], nom2[MAX_NOM];
+      getnameinfo((struct sockaddr*)&address, len, nom,MAX_NOM,NULL,0,0);
+      printf("IP client : %s\n", nom);
+      
+      getsockname(s, (struct sockaddr*) &address2, &len2);
+      getnameinfo((struct sockaddr*)&address2, len2, nom2, MAX_NOM, NULL,0,0);
+      printf("IP server : %s\n", nom2);
 
       launchThread(clientChat, &b, sizeof(b));
       listClients[nbClients] = b;
+      p.x = 0;
+      p.y = 0;
+      p.z = 0;
+      p.angle = 0;
+      positions[nbClients] = p;
+
       nbClients++;
       return 0;
     }
@@ -199,8 +215,8 @@ int main(void) {
 
     beaconPack pack;
 
-    pack.b.port = atoi("1330");
-    strcpy(pack.b.name, "Xmazing");
+    pack.b.port = atoi(SERVER_PORT);
+    strcpy(pack.b.name, SERVER_NAME);
 
     pack.br = setBroadcast(UDP_PORT);
     launchThread(beacon,&pack,sizeof(pack));

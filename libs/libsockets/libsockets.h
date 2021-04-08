@@ -21,7 +21,6 @@
 /* DEFINE  */
 #define MAX_SERVER      50 // maximum de serveur possible de stocker dans le serveur
 #define MAX_TAMPON      800 //taille maximum des messages pour la discussion avec le serveur en TCP
-#define MAX_PSEUDO      64
 /* STRUCTURES  */
 struct broadReturn {
     int sfd;
@@ -30,18 +29,10 @@ struct broadReturn {
 
 typedef struct {
     int s;
-    int i;
-    char pseudo[MAX_PSEUDO];
-    FILE *fd;
-    int connected;
-    int admin;
-} balise_cotcp;
-
-typedef struct {
-    int s;
     int (*fonction) (int);
 } balise_trait;
 
+// TODO à virer
 typedef struct server_s{
 	char nom_brut[10];
 	char nom_Server[10];
