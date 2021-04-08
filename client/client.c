@@ -108,7 +108,7 @@ void envoieTouches(void *pack){
 		int evenement=attendreEvenement(&touche,&fenetre,&quitter);
 		if(!evenement){ usleep(10000); continue; };
 		if(touche){
-			if(touche==TOUCHE_GAUCHE) { envoi.touche=0b00000001; printf("GAUCHE\n"); }
+			if(touche==TOUCHE_GAUCHE) { envoi.touche=0b00000001; }
 			if(touche==TOUCHE_DROITE) { envoi.touche=0b00000010; }
 			if(touche==TOUCHE_HAUT) { envoi.touche=0b00000100; }
 			if(touche==TOUCHE_BAS) { envoi.touche=0b00001000; }
@@ -176,7 +176,7 @@ void communicationServeur(void *pack){
 				if(nb>0){
 					//Traitement des commandes d'entrée
 					if(strcmp(cmd,"CONNECTE")==0){
-						server->id=(char)atoi(args);
+						serv.id=atoi(args);
 						fprintf(stdout,"%s",tampon);
 						fflush(stdout);
 					}
