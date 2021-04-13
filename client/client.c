@@ -1,18 +1,7 @@
-#include "libsockets.h"
-#include "libthreads.h"
-#include "libgraph.h"
-#include "common.h"
-
-#define PORT 1337
-#define MAX_LIGNE 1024
+#include "client.h"
 
 struct sigaction action;
 int statut=0;
-
-typedef struct envTouche_s{
-	uint8_t id;
-	uint8_t touche;
-}envTouche_t;
 
 void hand(int sig){
 	if(sig==SIGINT){
@@ -22,18 +11,21 @@ void hand(int sig){
 
 /* === POLL SUR ENTREE STANDARD ET LA SOCKET POUR AFFICHAGE ET CHOIX DU SERVEUR === */
 server_t pollEcoute(int s){
+    	int choix;
+    	char buffer[MAX_TAMPON];
+	char hostname[MAX_HOSTNAME];
+	char name[MAX_TAMPON];
+    	server_t tab[MAX_SERVER];
+    	int keepRunning = 1;
+    	int nbServ=0;
+	int flag;
+	int port;
+
     	struct pollfd descripteurs[2];
     	descripteurs[0].fd=s;
     	descripteurs[0].events=POLLIN;
     	descripteurs[1].fd=0;
     	descripteurs[1].events=POLLIN;
-    	//struct sockaddr_in other_socket;
-    	int choix;
-    	char buffer[50];
-	char servAddr[50];
-    	int keepRunning = 1;
-    	server_t tab[MAX_SERVER];
-    	int nbServ=0;
 	printf("Entrez le numero du serveur souhaite a n'importe quel moment\n");
 	while(keepRunning){
 		int nb = poll(descripteurs,2,-1);
@@ -43,17 +35,16 @@ server_t pollEcoute(int s){
 		}
 		if((descripteurs[0].revents&POLLIN)!=0){
 			memset(buffer,0,sizeof(buffer));
-			memset(servAddr,0,sizeof(servAddr));
+			memset(hostname,0,sizeof(hostname));
 			//unsigned sock_len=sizeof(struct sockaddr);
 			// TODO : Modif
-			receptionServer(s,buffer,servAddr,sizeof(buffer),sizeof(servAddr));
+			receptionServer(s,buffer,hostname,sizeof(buffer),sizeof(hostname));
 			//recvfrom(s, buffer, sizeof(buffer)-1, 0, (struct sockaddr *)&other_socket, &sock_len);
-			char name[50];
 			strcpy(name,buffer);
 			for(long unsigned int i=0;i<sizeof(name)-1;i++){
 				name[i]=name[i+2];
 			}
-			int flag=0;
+			flag=0;
 			if(nbServ!=0){
 				for(int i=0; i<=nbServ;i++){
 					/* === si le serveur est deja trouve, on ajoute pas le server dans le tableau ===*/
@@ -65,7 +56,7 @@ server_t pollEcoute(int s){
 			if(flag==0){
 				nbServ++;
 				strcpy(tab[nbServ].nom_brut,buffer);
-				int port = buffer[0] + (buffer[1]<<8);
+				port = buffer[0] + (buffer[1]<<8);
 				snprintf(tab[nbServ].portTCP,5,"%d",port);
 				/*	
 				for(long unsigned int i=0;i<sizeof(buffer)-1;i++){
@@ -73,7 +64,7 @@ server_t pollEcoute(int s){
 				}
 				*/
 				strcpy(tab[nbServ].nom_Server,name);
-				strcpy(tab[nbServ].addr_Server,servAddr);
+				strcpy(tab[nbServ].hostname,hostname);
 				//tab[nbServ].addr_Server=other_socket.sin_addr;
 				printf("%d) La partie de jeu %s est sur le port : %d\n",nbServ,name,port);
 			}
@@ -93,23 +84,23 @@ server_t pollEcoute(int s){
 	}
 	return tab[choix];
 }
+
 /*
 void gestionJeu(void *pack){
 	unsigned char *fenetre=pack;
 }
 */
+
 void envoieTouches(void *pack){
 	server_t *server=pack;
-	struct sockaddr_in Addr;
-	int socket=udpEcoute(atoi(server->portTCP)+1);
-	//Sockaddr_in sur l'adresse du server
-	Addr=createAddr(atoi(server->portTCP)+1,server->addr_Server);
 	unsigned char resultat,fenetre,quitter;
 	int touche;
 	int recu;
 	envTouche_t envoi;
+	int portUDP=atoi(server->portTCP)+1;
+	int socket=udpEcoute(portUDP);
+	
 	envoi.id=server->id;
-	socklen_t size = sizeof(struct sockaddr_in);
 	//TODO : Modifier avec var globales comme pour labyrinthe.c
 	resultat=creerFenetre(640,480,"Test labyrinthe");
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
@@ -126,9 +117,7 @@ void envoieTouches(void *pack){
 		}
 		if(quitter==1){ envoi.touche=0b00100000; printf("Quitter\n"); break; }
 		if(recu){
-			if((sendto(socket,(void *)&envoi,sizeof(envTouche_t),0,(struct sockaddr *)&Addr,size))==-1){
-				perror("envoieTouches.sendto");
-			}
+			envoieTouche(socket,portUDP,(void *)&envoi,sizeof(envTouche_t),server->hostname);
 		}
 	}
 	fermerFenetre();
@@ -139,16 +128,14 @@ void envoieTouches(void *pack){
 void communicationServeur(void *pack){
 	server_t *server=pack;
 	server_t serv=*server;
-
-	//FILE *fileSock=fdopen(server->socketTCP,"a+");
+	char pseudo[MAX_PSEUDO];
 	char tampon[MAX_TAMPON];
+	char str[MAX_TAMPON];
 
 	/* Envoi du pseudo */
 	printf("Quel est votre pseudo ?\n");
-	char pseudo[20]; // Ajout d'une constante pour le max dans pseudo
 	fgets(pseudo,MAX_TAMPON,stdin);
 	fflush(stdin);
-	char str[MAX_TAMPON];
 	sprintf(str,"CONNEXION %s",pseudo);
 	fprintf(server->fileSock,"%s",str);
 	fflush(server->fileSock);
@@ -169,7 +156,6 @@ void communicationServeur(void *pack){
 			char args[MAX_TAMPON];
 			int reste;
 			if(ioctl(server->socketTCP,FIONREAD,&reste)<0 ||reste==0){ 
-				//fclose(fileSock);
 				statut=1; 
 			}
 			char msg[MAX_LIGNE];
@@ -178,7 +164,6 @@ void communicationServeur(void *pack){
 			while(reste>0){
 				if(fgets(tampon,MAX_LIGNE,server->fileSock)==NULL){
 					statut=1;
-					//fclose(fileSock);
 				}
 				if(fflush(server->fileSock)){
 					perror("fflush");
@@ -255,11 +240,11 @@ int main(){
 	serv=pollEcoute(socket);
 	/* === Informations sur le serveur choisi === */
 	printf("Le port de la partie choisie est : %s\n",serv.portTCP);
-	printf("Adresse de l'hote : %s\n",serv.addr_Server);
+	printf("Nom de l'hote : %s\n",serv.hostname);
 	printf("Port UDP de l'envoi des touches : %d\n",atoi(serv.portTCP)+1);
 
 	/* === Connexion TCP client : utilisation du cours === */
-	serv.socketTCP=connexionServ(serv);
+	serv.socketTCP=connexionServ(serv.hostname,serv.portTCP);
 	serv.fileSock=fdopen(serv.socketTCP,"a+");
 	launchThread(communicationServeur,&serv,sizeof(serv));
 	/* Fin de la connexion */

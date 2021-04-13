@@ -139,8 +139,39 @@ void receptionServer(int socket,char *buffer, char *name,int bufferSize,int name
 	getnameinfo((struct sockaddr *)&adresse, len, name,nameSize,NULL,0,0);
 }
 
+int nomVersAdresse(char *hote,struct sockaddr_storage *padresse){
+	struct addrinfo *resultat,*origine;
+	int statut=getaddrinfo(hote,NULL,NULL,&origine);
+	if(statut==EAI_NONAME) return -1;
+	if(statut<0){ 
+		perror("nomVersAdresse.getaddrinfo");
+		exit(EXIT_FAILURE);
+	}
+	struct addrinfo *p;
+	for(p=origine,resultat=origine;p!=NULL;p=p->ai_next){
+		if(p->ai_family==AF_INET){
+			resultat=p;
+			break;
+		}
+	}
+	memcpy(padresse,resultat->ai_addr,resultat->ai_addrlen);
+	return 0;
+}
+
+void envoieTouche(int socket,int port, char *msg,int sizemsg,char *hostname){
+	struct sockaddr_in adresse;
+	adresse.sin_family=AF_INET;
+	if(nomVersAdresse(hostname,(void *)&adresse)<0){
+		fprintf(stderr,"envoieTouche.nomVersAdresse : Erreur\n");
+	}
+	adresse.sin_port=htons(port);
+	if((sendto(socket,msg,sizemsg,0,(struct sockaddr *)&adresse,sizeof adresse))==-1){
+		perror("envoieTouche.sendto");
+	}
+}
+
 /* Initialisation de la connexion TCP avec le serveur */
-int connexionServ(server_t Serveur){
+int connexionServ(char *hostname,char *portTCP){
 	struct addrinfo precisions,*resultat,*origine;
 	int statut;
 	int s;
@@ -149,7 +180,7 @@ int connexionServ(server_t Serveur){
 	precisions.ai_family=AF_UNSPEC;
 	precisions.ai_socktype=SOCK_STREAM;
 
-	statut=getaddrinfo(Serveur.addr_Server,Serveur.portTCP,&precisions,&origine);
+	statut=getaddrinfo(hostname,portTCP,&precisions,&origine);
 	if(statut<0){ perror("connexionServ.getaddrinfo"); exit(EXIT_FAILURE); }
 	struct addrinfo *p;
 	for(p=origine,resultat=origine;p!=NULL;p=p->ai_next)
