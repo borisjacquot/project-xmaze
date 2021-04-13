@@ -172,8 +172,8 @@ void clientChat(void *pack) {
 int saveTCP(int s) {
     balise_cotcp b;
     playerPosition p;
-    struct sockaddr_storage address, address2;
-    socklen_t len, len2;
+    struct sockaddr_storage address;
+    socklen_t len;
     if (nbClients < MAX_CONNEXIONS) {
       b.s = s;
       b.i = nbClients;
@@ -181,13 +181,10 @@ int saveTCP(int s) {
       
       len = sizeof(address);
       getpeername(s, (struct sockaddr*)&address, &len);
-      char nom[MAX_NOM], nom2[MAX_NOM];
+      char nom[MAX_NOM];
       getnameinfo((struct sockaddr*)&address, len, nom,MAX_NOM,NULL,0,0);
       printf("IP client : %s\n", nom);
       
-      getsockname(s, (struct sockaddr*) &address2, &len2);
-      getnameinfo((struct sockaddr*)&address2, len2, nom2, MAX_NOM, NULL,0,0);
-      printf("IP server : %s\n", nom2);
 
       launchThread(clientChat, &b, sizeof(b));
       listClients[nbClients] = b;
