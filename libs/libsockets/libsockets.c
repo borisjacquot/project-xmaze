@@ -92,8 +92,28 @@ void sendBroadcast(int sfd, struct sockaddr_storage broad, char * msg, int size)
     printf("\033[0;36m(INFO) sent %d bytes in broadcast mode\033[0m\n",numbytes);
 }
 
+/* Fonction de recuperation d'une adresse depuis le nom de l'hote */
+int nomVersAdresse(char *hote,struct sockaddr_storage *padresse){
+	struct addrinfo *resultat,*origine;
+	int statut=getaddrinfo(hote,NULL,NULL,&origine);
+	if(statut==EAI_NONAME) return -1;
+	if(statut<0){ 
+		perror("nomVersAdresse.getaddrinfo");
+		exit(EXIT_FAILURE);
+	}
+	struct addrinfo *p;
+	for(p=origine,resultat=origine;p!=NULL;p=p->ai_next){
+		if(p->ai_family==AF_INET){
+			resultat=p;
+			break;
+		}
+	}
+	memcpy(padresse,resultat->ai_addr,resultat->ai_addrlen);
+	return 0;
+}
+
 /* Fonction d'ecoute du broadcast UDP sur le port 1337 */
-int udpInit(int port){
+int udpInit(int port,int AddrHote,char *hostname){
 
 	struct sockaddr_in mysocket;
 	int s;
@@ -112,7 +132,13 @@ int udpInit(int port){
 	memset(&mysocket, 0, sizeof(mysocket));
 	mysocket.sin_family = AF_INET;
 	mysocket.sin_port = htons(port);
-	mysocket.sin_addr.s_addr = INADDR_ANY;
+	if(AddrHote){
+		if(nomVersAdresse(hostname,(void *)&mysocket)<0){
+			fprintf(stderr,"udpInit.nomVersAdresse : Erreur\n");
+		}
+	}else{
+		mysocket.sin_addr.s_addr = INADDR_ANY;
+	}
 	bzero(mysocket.sin_zero,8);
 
 	if((bind(s, (struct sockaddr *)&mysocket, sizeof(struct sockaddr)))!=0){
@@ -129,25 +155,6 @@ void receptionServer(int socket,char *buffer, char *name,int bufferSize,int name
 	recvfrom(socket, buffer, bufferSize-1,0,(struct sockaddr *)&adresse,&len);
 	getpeername(socket,(struct sockaddr *)&adresse,&len);
 	getnameinfo((struct sockaddr *)&adresse, len, name,nameSize,NULL,0,0);
-}
-
-int nomVersAdresse(char *hote,struct sockaddr_storage *padresse){
-	struct addrinfo *resultat,*origine;
-	int statut=getaddrinfo(hote,NULL,NULL,&origine);
-	if(statut==EAI_NONAME) return -1;
-	if(statut<0){ 
-		perror("nomVersAdresse.getaddrinfo");
-		exit(EXIT_FAILURE);
-	}
-	struct addrinfo *p;
-	for(p=origine,resultat=origine;p!=NULL;p=p->ai_next){
-		if(p->ai_family==AF_INET){
-			resultat=p;
-			break;
-		}
-	}
-	memcpy(padresse,resultat->ai_addr,resultat->ai_addrlen);
-	return 0;
 }
 
 void envoieTouche(int socket,int port, char *msg,int sizemsg,char *hostname){
