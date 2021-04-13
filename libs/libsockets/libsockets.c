@@ -93,7 +93,7 @@ void sendBroadcast(int sfd, struct sockaddr_storage broad, char * msg, int size)
 }
 
 /* Fonction d'ecoute du broadcast UDP sur le port 1337 */
-int udpEcoute(int port){
+int udpInit(int port){
 
 	struct sockaddr_in mysocket;
 	int s;
@@ -120,14 +120,6 @@ int udpEcoute(int port){
 		exit(EXIT_FAILURE);
 	}
 	return s;
-}
-
-struct sockaddr_in createAddr(int port,char *addr){
-	struct sockaddr_in Ret;
-	inet_aton(addr,&Ret.sin_addr);
-	Ret.sin_port=htons(port);
-	Ret.sin_family=AF_INET;
-	return Ret;
 }
 
 //Reception adresse serveur

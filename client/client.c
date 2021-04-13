@@ -98,7 +98,7 @@ void envoieTouches(void *pack){
 	int recu;
 	envTouche_t envoi;
 	int portUDP=atoi(server->portTCP)+1;
-	int socket=udpEcoute(portUDP);
+	int socket=udpInit(portUDP);
 	
 	envoi.id=server->id;
 	//TODO : Modifier avec var globales comme pour labyrinthe.c
@@ -236,7 +236,7 @@ int main(){
 	
 	/* recuperation du broadcast UDP des serveurs et choix d'un serveur */
 	server_t serv;
-	int socket = udpEcoute(PORT);
+	int socket = udpInit(PORT);
 	serv=pollEcoute(socket);
 	/* === Informations sur le serveur choisi === */
 	printf("Le port de la partie choisie est : %s\n",serv.portTCP);

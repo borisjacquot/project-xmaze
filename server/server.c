@@ -28,7 +28,7 @@ void beacon(void *pack){
 void controlsHandler() {
     /* écoute udp  */
     int s, id, key;
-    s = udpEcoute(KEY_PORT);
+    s = udpInit(KEY_PORT);
 
     struct sockaddr_in addrClient;
     socklen_t size = sizeof addrClient;
