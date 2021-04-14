@@ -29,6 +29,22 @@
 #define GAUCHE            1
 #define DROITE            2
 
+//laby
+#define TYPE_MUR	  0
+#define TYPE_SPHERE	  1
+
+#define LABY_X		  8
+#define LABY_Y		  8
+#define MUR_TAILLE	  200
+#define MUR_HAUTEUR	  200
+
+#define FOCALE		  (3*MUR_TAILLE)
+
+/* --- MACROS --- */
+#define max(a,b)	  (((a)<b))?(a):(b)
+#define min(a,b)	  (((a)>b))?(a):(b)
+#define sign(a)		  (((a)==0)?0:(((a)>0)?1:-1))
+
 /* --- STRUCTURES --- */
 typedef struct {
   struct broadReturn br;
@@ -50,3 +66,30 @@ typedef struct {
     int connected;
     int admin;
 } balise_cotcp;
+
+typedef struct {
+    int x,y,z;
+} point;
+
+typedef struct {
+    int x,y;
+} point2D;
+
+typedef struct {
+    point p[4];
+} mur;
+
+typedef struct {
+    point o;
+    int r;
+} sphere;
+
+typedef struct {
+    int type;
+    union {
+	point2D p[4];
+	point2D o;
+	int r;
+    } def;
+} objet2D;
+

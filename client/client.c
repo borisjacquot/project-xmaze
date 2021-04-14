@@ -85,11 +85,14 @@ server_t pollEcoute(int s){
 	return tab[choix];
 }
 
-/*
 void gestionJeu(void *pack){
-	unsigned char *fenetre=pack;
+	//unsigned char *fenetre=pack;
+	server_t *server=pack;
+	printf("%s\n",server->hostname);
+	//int socket = udpInit(atoi(server->portTCP),1,server->hostname);
+	//recevoir les points 2d du serveur puis les afficher dans la fenetre
 }
-*/
+
 
 void envoieTouches(void *pack){
 	server_t *server=pack;
