@@ -40,6 +40,7 @@ void receptionServer(int,char *,char *,int,int);
 int connexionServ(char *,char *); // initialisation de la connexion TCP avec le serveur
 void receptionObjets(int,char *,int,char *,int);
 int nomVersAdresse(char *,struct sockaddr_storage *);
+int hostnameToIP(char *,char *,struct in_addr *);
 void envoieTouche(int,int,char *,int,char *);
 int initialisationServeur(char *,int);
 void boucleServeur(void *);

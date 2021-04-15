@@ -112,6 +112,26 @@ int nomVersAdresse(char *hote,struct sockaddr_storage *padresse){
 	return 0;
 }
 
+int hostnameToIP(char *hostname,char *ip,struct in_addr *adresse){
+	struct hostent *he;
+	struct in_addr **addr_list;
+	int i;
+
+	if((he=gethostbyname(hostname))==NULL){
+		perror("hostnameToIP.gethostbyname");
+		return 1;
+	}
+
+	addr_list=(struct in_addr **) he->h_addr_list;
+
+	for(i=0;addr_list[i]!=NULL;i++){
+		adresse=addr_list[i];
+		strcpy(ip,inet_ntoa(*addr_list[i]));
+		return 0;
+	}
+	return 1;
+}
+
 /* Fonction d'ecoute du broadcast UDP sur le port 1337 */
 int udpInit(int port,int hasAddr,char *hostname,int rcvPassant){
 
@@ -119,13 +139,13 @@ int udpInit(int port,int hasAddr,char *hostname,int rcvPassant){
 	int s;
 	s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if(s<0){
-		perror("udpEcoute.socket");
+		perror("udpInit.socket");
 		exit(EXIT_FAILURE);
 	}
 	int broadcast=1;
 
 	if((setsockopt(s, SOL_SOCKET, SO_REUSEADDR,&broadcast, sizeof broadcast))!=0){
-		perror("udpEcoute.setsockopt");
+		perror("udpInit.setsockopt");
 		exit(EXIT_FAILURE);
 	}
 
@@ -143,9 +163,13 @@ int udpInit(int port,int hasAddr,char *hostname,int rcvPassant){
 	mysocket.sin_family = AF_INET;
 	mysocket.sin_port = htons(port);
 	if(hasAddr){
-		if(nomVersAdresse(hostname,(void *)&mysocket)<0){
+		char IP[100];
+		hostnameToIP(hostname,IP,&mysocket.sin_addr);
+		printf("IP : %s\n",IP);
+		//mysocket.sin_addr.s_addr = IP;
+		/*if(nomVersAdresse(hostname,(void *)&mysocket)<0){
 			fprintf(stderr,"udpInit.nomVersAdresse : Erreur\n");
-		}
+		}*/
 	}else{
 		mysocket.sin_addr.s_addr = INADDR_ANY;
 	}
@@ -163,7 +187,7 @@ void receptionServer(int socket,char *buffer, char *name,int bufferSize,int name
 	struct sockaddr_storage adresse;
 	unsigned len=sizeof(struct sockaddr);
 	recvfrom(socket, buffer, bufferSize-1,0,(struct sockaddr *)&adresse,&len);
-	getpeername(socket,(struct sockaddr *)&adresse,&len);
+	//getpeername(socket,(struct sockaddr *)&adresse,&len);
 	getnameinfo((struct sockaddr *)&adresse, len, name,nameSize,NULL,0,0);
 }
 
