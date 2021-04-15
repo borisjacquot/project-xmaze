@@ -2,6 +2,10 @@
 
 /* --- GLOBAL VARIABLES --- */
 mur murs[(LABY_X+1)*LABY_Y+(LABY_Y+1)*LABY_X];
+sphere spheres[MAX_SPHERES];
+objet2D objets[(LABY_X+1)*LABY_Y+(LABY_Y+1)*LABY_X+MAX_SPHERES];
+
+int nb;
 
 char *laby[2*LABY_Y+1]={
     " - - - - - - - - ",
@@ -71,23 +75,23 @@ int compare_murs(const void *arg1, const void *arg2) {
     return d2-d1;
 }
 
-/*
+
 int compare_spheres(const void *arg1, const void *arg2) {
     const sphere *sph1=arg1;
     const sphere *sph2=arg2;
-    return 0;
-    // TODO
+    int d1=abs(sph1->o.x)+abs(sph1->o.z);
+    int d2=abs(sph2->o.x)+abs(sph2->o.z);
+    return d2-d1;
 }
-*/
 
 void tri_murs(mur *murs, int n) {
     qsort(murs, n, sizeof(mur), compare_murs);
 }
-/*
+
 void tri_spheres(sphere *spheres, int n) {
     qsort(spheres, n, sizeof(sphere), compare_spheres);
 }
-*/
+
 
 int dessin_vers_murs(char *laby[],mur *murs){
     int nb=0;
@@ -108,7 +112,7 @@ int dessin_vers_murs(char *laby[],mur *murs){
           murs[nb].p[3].x=(j+1)*MUR_TAILLE;
           murs[nb].p[3].z=i*MUR_TAILLE;
           murs[nb++].p[3].y=0;
-          }
+        }
 
         if(i<8 && laby[2*i+1][2*j]=='|'){
           murs[nb].p[0].x=j*MUR_TAILLE;
@@ -123,23 +127,23 @@ int dessin_vers_murs(char *laby[],mur *murs){
           murs[nb].p[3].x=j*MUR_TAILLE;
           murs[nb].p[3].z=(i+1)*MUR_TAILLE;
           murs[nb++].p[3].y=0;
-          }
         }
       }
+    }
     return nb;
 }
 
 void decale_murs(mur *murs, int nb, point position) {
     int i, j;
     for (i=0; i<nb; i++)
-	for (j=0; j<4; j++)
-	    murs[i].p[j]=soustraire_points(murs[i].p[j], position);
+	    for (j=0; j<4; j++)
+	      murs[i].p[j]=soustraire_points(murs[i].p[j], position);
 }
 
 void decale_spheres(sphere *spheres, int nb, point position) {
     int i;
     for (i=0; i<nb; i++)
-	spheres[i].o=soustraire_points(spheres[i].o, position);
+	    spheres[i].o=soustraire_points(spheres[i].o, position);
 }
 
 void rotation_murs(mur *murs,int nb,int angle){
@@ -170,6 +174,55 @@ void rotation_sphere(sphere *spheres,int nb,int angle){
     }
 }
 
+int positionOK(int x, int z, mur *murs, int nb) {
+    int max = LABY_X*MUR_TAILLE;
+    int min = 0;
+    int xab, xac, zab, zac;
+    int result=1;
+    if ((x < max) && (x > min) && (z < max) && (z > min)) {
+      for (int i=0; i<nb; i++) {
+        xab=murs[i].p[3].x-murs[i].p[0].x;
+        zab=murs[i].p[3].z-murs[i].p[0].z;
+        xac=x-murs[i].p[0].x;
+        zac=z-murs[i].p[0].z;
+        // printf(":%d\n", xab*zac-xac*zab);
+        if (xab*zac-xac*zab == 0) result=0; // pas colinéaires donc pas de colision
+      }
+    } else {
+      result = 0;
+    }
+    return result;
+}
+
+void projete(mur *murs,int nb,objet2D *objets,int *no){
+  int i,j;
+  *no=0;
+  for(i=0;i<nb;i++){
+    int x1=murs[i].p[0].x; int z1=murs[i].p[0].z;
+    int x2=murs[i].p[3].x; int z2=murs[i].p[3].z;
+    if(z1<=0 && z2<=0) continue;
+    if(z1<=0){
+      murs[i].p[0].x=x2+(x1-x2)*(1-z2)/(z1-z2); murs[i].p[0].z=1;
+      murs[i].p[1].x=murs[i].p[0].x; murs[i].p[1].z=murs[i].p[0].z;
+    }
+    if(z2<=0){
+      murs[i].p[3].x=x1+(x2-x1)*(1-z1)/(z2-z1); murs[i].p[3].z=1;
+      murs[i].p[2].x=murs[i].p[3].x; murs[i].p[2].z=murs[i].p[3].z;
+    }
+    objets[*no].type=TYPE_MUR;
+    for(j=0;j<4;j++){
+      int z=murs[i].p[j].z;
+      int x=murs[i].p[j].x;
+      int y=murs[i].p[j].y;
+      int px,py;
+      px=LARGEUR/2+x*FOCALE/z;
+      py=HAUTEUR/4+(y-HAUTEUR/4)*FOCALE/z;
+      objets[*no].def.p[j].x=px;
+      objets[*no].def.p[j].y=py;
+    }
+    (*no)++;
+  }
+}
 
 
 void beacon(void *pack){
@@ -187,7 +240,7 @@ void controlsHandler() {
     /* écoute udp  */
     int s, id, key;
     s = udpInit(KEY_PORT,0,NULL);
-
+    point p;
     struct sockaddr_in addrClient;
     socklen_t size = sizeof addrClient;
     char buffer[MAX_LIGNE];
@@ -211,7 +264,23 @@ void controlsHandler() {
           positions[id].angle += 5;
           break;
       }
-      printf("id: %d : %d %d %d ; %d\n", id, positions[id].x, positions[id].y, positions[id].z, positions[id].angle);
+      //printf("id: %d : %d %d %d ; %d\n", id, positions[id].x, positions[id].y, positions[id].z, positions[id].angle);
+      
+      for (int i=0; i<nbClients; i++) {
+        p.x = positions[i].x;
+        p.y = positions[i].y;
+        p.z = positions[i].z;
+        mur *m2=duplique_murs(murs, nb);
+        decale_murs(m2, nb, p);
+        rotation_murs(m2, nb, positions[i].angle);
+        tri_murs(m2, nb);
+        objet2D *objets=malloc(nb*sizeof(objet2D));
+        int no;
+        projete(m2, nb, objets, &no);
+        //printf("%d %d\n", objets[0].def.p[0].x, objets[0].def.p[0].y);
+        free(objets);
+      }
+
     }
 }
 
@@ -325,6 +394,8 @@ void clientChat(void *pack) {
 
 }
 
+
+//TODO
 #define MAX_NOM   1024
 
 int saveTCP(int s) {
@@ -346,9 +417,15 @@ int saveTCP(int s) {
 
       launchThread(clientChat, &b, sizeof(b));
       listClients[nbClients] = b;
-      p.x = 0;
+
+      // init position aléatoire
+      p.x=rand()%2001;
+      p.z=rand()%2001;
+      while (!positionOK(p.x, p.z, murs, nb)) {
+        p.x=rand()%2001;
+        p.z=rand()%2001;
+      }
       p.y = 0;
-      p.z = 0;
       p.angle = 0;
       positions[nbClients] = p;
 
@@ -360,6 +437,13 @@ int saveTCP(int s) {
 }
 
 int main(void) {
+
+    srand(time(NULL)); // init random
+
+    /* --- INIT LABY --- */
+    nb = dessin_vers_murs(laby, murs);
+
+
     /* --- BROADCAST UDP --- */
 //    struct sigaction action = {0};
     
