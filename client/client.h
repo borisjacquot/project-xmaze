@@ -18,14 +18,39 @@
 #define MAX_TAMPON 512
 #define MAX_NAME_SERVER 12
 #define MAX_HOSTNAME 64
+#define TAILLE_TOUCHES 2
 #define TAILLE_PORT 5
+
+#define CONNECTE "CONNECTE"
+#define JOUEURS "JOUEURS"
+#define MSGFROM "MSGFROM"
+#define MSG "MSG"
+#define CMD "CMD"
+#define START "/start"
+#define STOP "/stop"
+
+#define TITRE	"Xmazing"
+#define LARGEUR 640
+#define HAUTEUR 480
+
+#define POINTS_MAX 32
+
+#define TYPE_MUR 0
+
+#define sign(a) (((a)==0)?0:(((a)>0)?1:-1))
 
 /** STRUCTURES **/
 
-typedef struct envTouche_s{
-	uint8_t id;
-	uint8_t touche;
-}envTouche_t;
+typedef struct{
+	int x,y;
+}point2D;
+
+typedef struct{
+	int type;
+	union{
+		point2D p[4];
+	}def;
+}objet2D;
 
 typedef struct server_s{
 	char nom_brut[MAX_NAME_SERVER];

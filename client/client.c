@@ -9,6 +9,107 @@ void hand(int sig){
 	}
 }
 
+/* Intersection d'un segment */
+
+unsigned char inter_seg_v(point2D a,point2D b,int x,int *y){
+if(sign(a.x-x)==sign(b.x-x)) return 0;
+*y=a.y+(b.y-a.y)*(x-a.x)/(b.x-a.x);
+return 1;
+}
+
+unsigned char inter_seg_h(point2D a,point2D b,int *x,int y){
+if(sign(a.y-y)==sign(b.y-y)) return 0;
+*x=a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y);
+return 1;
+}
+
+/* Intersection d'un polygone avec un rectangle */
+
+void inter_poly_rect(point2D *orig,int no,point2D *result,int *nr){
+point2D avant[POINTS_MAX];
+point2D apres[POINTS_MAX];
+int i,j;
+for(i=0;i<no;i++) avant[i]=orig[i];
+#ifdef DEBUG
+printf("??");
+for(i=0;i<no;i++) printf("(%d,%d) ",avant[i].x,avant[i].y);
+printf("\n");
+#endif
+int nv=no;
+for(i=0;i<4;i++){
+  int np=0;
+  for(j=0;j<nv;j++){
+    int p=(j+nv-1)%nv;
+    point2D a=avant[p];
+    point2D b=avant[j];
+    int x,y;
+    unsigned char inta,intb;
+    switch(i){
+      case 0:
+        x=0;
+        inter_seg_v(a,b,x,&y);
+        if(a.x>=0) inta=1; else inta=0;
+        if(b.x>=0) intb=1; else intb=0;
+        break;
+      case 1:
+        y=HAUTEUR;
+        inter_seg_h(a,b,&x,y);
+        if(a.y<=HAUTEUR) inta=1; else inta=0;
+        if(b.y<=HAUTEUR) intb=1; else intb=0;
+        break;
+      case 2:
+        x=LARGEUR;
+        inter_seg_v(a,b,x,&y);
+        if(a.x<=LARGEUR) inta=1; else inta=0;
+        if(b.x<=LARGEUR) intb=1; else intb=0;
+        break;
+      case 3:
+        y=0;
+        inter_seg_h(a,b,&x,y);
+        if(a.y>=0) inta=1; else inta=0;
+        if(b.y>=0) intb=1; else intb=0;
+        break;
+      }
+    if(intb){
+      if(!inta){ apres[np].x=x; apres[np].y=y; np++; }
+      apres[np++]=b;
+      }
+    else{
+      if(inta){ apres[np].x=x; apres[np].y=y; np++; }
+      }
+    }
+  for(j=0;j<np;j++) avant[j]=apres[j];
+  nv=np;
+  }
+for(i=0;i<nv;i++) result[i]=avant[i];
+#ifdef DEBUG
+printf("!!");
+for(i=0;i<nv;i++) printf("(%d,%d) ",result[i].x,result[i].y);
+printf("\n");
+#endif
+*nr=nv;
+}
+
+/* Dessin d'un labyrinthe */
+
+void dessine_2D(objet2D *objet,int no){
+int i,j;
+short int x[POINTS_MAX];
+short int y[POINTS_MAX];
+for(i=0;i<no;i++){
+  if(objet[i].type==TYPE_MUR){
+    point2D poly[POINTS_MAX];
+    int np;
+    inter_poly_rect(objet[i].def.p,4,poly,&np);
+    for(j=0;j<np;j++){
+      x[j]=poly[j].x;
+      y[j]=HAUTEUR-poly[j].y;
+    }
+    polygonePlein(x,y,np,COULEUR_ROUGE,COULEUR_ROSE);
+    }
+  }
+}
+
 /* === POLL SUR ENTREE STANDARD ET LA SOCKET POUR AFFICHAGE ET CHOIX DU SERVEUR === */
 server_t pollEcoute(int s){
     	int choix;
@@ -36,10 +137,7 @@ server_t pollEcoute(int s){
 		if((descripteurs[0].revents&POLLIN)!=0){
 			memset(buffer,0,sizeof(buffer));
 			memset(hostname,0,sizeof(hostname));
-			//unsigned sock_len=sizeof(struct sockaddr);
-			// TODO : Modif
 			receptionServer(s,buffer,hostname,sizeof(buffer),sizeof(hostname));
-			//recvfrom(s, buffer, sizeof(buffer)-1, 0, (struct sockaddr *)&other_socket, &sock_len);
 			strcpy(name,buffer);
 			for(long unsigned int i=0;i<sizeof(name)-1;i++){
 				name[i]=name[i+2];
@@ -58,14 +156,8 @@ server_t pollEcoute(int s){
 				strcpy(tab[nbServ].nom_brut,buffer);
 				port = buffer[0] + (buffer[1]<<8);
 				snprintf(tab[nbServ].portTCP,5,"%d",port);
-				/*	
-				for(long unsigned int i=0;i<sizeof(buffer)-1;i++){
-					buffer[i]=buffer[i+2];
-				}
-				*/
 				strcpy(tab[nbServ].nom_Server,name);
 				strcpy(tab[nbServ].hostname,hostname);
-				//tab[nbServ].addr_Server=other_socket.sin_addr;
 				printf("%d) La partie de jeu %s est sur le port : %d\n",nbServ,name,port);
 			}
 		}
@@ -85,47 +177,96 @@ server_t pollEcoute(int s){
 	return tab[choix];
 }
 
-void gestionJeu(void *pack){
-	//unsigned char *fenetre=pack;
-	server_t *server=pack;
-	printf("%s\n",server->hostname);
-	//int socket = udpInit(atoi(server->portTCP),1,server->hostname);
-	//recevoir les points 2d du serveur puis les afficher dans la fenetre
-}
-
-
+/* Envoie des touches au serveur + gestion affichage */
 void envoieTouches(void *pack){
 	server_t *server=pack;
 	unsigned char resultat,fenetre,quitter;
+	char envoi[TAILLE_TOUCHES];
 	int touche;
 	int recu;
-	envTouche_t envoi;
 	int portUDP=atoi(server->portTCP)+1;
-	int socket=udpInit(portUDP,1,server->hostname);
+	int socket=udpInit(portUDP,1,server->hostname,0);
+	int newsock=udpInit(atoi(server->portTCP),1,server->hostname,1);
 	
-	envoi.id=server->id;
-	//TODO : Modifier avec var globales comme pour labyrinthe.c
-	resultat=creerFenetre(640,480,"Test labyrinthe");
+	envoi[0]=server->id;
+	resultat=creerFenetre(LARGEUR,HAUTEUR,TITRE);
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
+	//launchThread(gestionJeu,&serv,sizeof(serv));
 	while(statut!=1){
+		/* Envoie touche */
 		recu=0;
 		int evenement=attendreEvenement(&touche,&fenetre,&quitter);
 		if(!evenement){ usleep(10000); continue; };
 		if(touche){
-			if(touche==TOUCHE_GAUCHE) { envoi.touche=0b00000001; recu=1; }
-			if(touche==TOUCHE_DROITE) { envoi.touche=0b00000010; recu=1; }
-			if(touche==TOUCHE_HAUT) { envoi.touche=0b00000100; recu=1; }
-			if(touche==TOUCHE_BAS) { envoi.touche=0b00001000; recu=1; }
-			if(touche==TOUCHE_ESPACE) { envoi.touche=0b00010000; recu=1; }
+			if(touche==TOUCHE_GAUCHE) { envoi[1]=0b00000001; recu=1; }
+			if(touche==TOUCHE_DROITE) { envoi[1]=0b00000010; recu=1; }
+			if(touche==TOUCHE_HAUT) { envoi[1]=0b00000100; recu=1; }
+			if(touche==TOUCHE_BAS) { envoi[1]=0b00001000; recu=1; }
+			if(touche==TOUCHE_ESPACE) { envoi[1]=0b00010000; recu=1; }
 		}
-		if(quitter==1){ envoi.touche=0b00100000; printf("Quitter\n"); break; }
+		if(quitter==1){ envoi[1]=0b00100000; printf("Quitter\n"); break; }
 		if(recu){
-			envoieTouche(socket,portUDP,(void *)&envoi,sizeof(envTouche_t),server->hostname);
+			envoieTouche(socket,portUDP,envoi,TAILLE_TOUCHES,server->hostname);
 		}
+		/* Reception et affichage jeu */
+		objet2D *objets=malloc(sizeof(objet2D));
+		receptionObjets(newsock,(void *)&objets,sizeof(objet2D),server->hostname,atoi(server->portTCP));
+		effacerFenetre();
+		dessine_2D(objets,sizeof(objets));
+		free(objets);
+		synchroniserFenetre();
 	}
 	fermerFenetre();
 	close(socket);
-	printf("Fin de thread envoie des touches\n");
+	close(newsock);
+	printf("Fin de thread envoie des touches et gestion du jeu\n");
+}
+
+void traitementCMD(char *tampon,char *cmd,char *args,server_t *server,int isReception){
+	char msg[MAX_LIGNE];
+	char pseudo[MAXNAME];
+	memset(msg,0,MAX_LIGNE);
+	if(isReception){
+		if(strcmp(cmd,CONNECTE)==0){
+			server->id=atoi(args);
+			fprintf(stdout,"%s",tampon);
+			fflush(stdout);
+		}
+		if(strcmp(cmd,JOUEURS)==0){
+			fprintf(stdout,"%s",tampon);
+			fflush(stdout);
+		}
+		if(strcmp(cmd,MSGFROM)==0){
+			strcpy(pseudo,args);
+			fflush(stdout);
+		}
+		if(strcmp(cmd,MSG)==0){
+			fprintf(stdout,"<%s> : %s",pseudo,args);
+			fflush(stdout);
+		}
+		if(strcmp(cmd,CMD)==0){
+			if(strcmp(args,"START")==0){
+				launchThread(envoieTouches,(void *)server,sizeof(server_t));
+			}
+		}
+	}else{
+		int ecrit=0;
+		if(strcmp(cmd,"/start")==0){
+			fprintf(server->fileSock,"CMD START\n");
+			fflush(server->fileSock);
+			ecrit=1;
+		}
+		if(strcmp(cmd,"/stop")==0){
+			fprintf(server->fileSock,"CMD STOP\n");
+			fflush(server->fileSock);
+			ecrit=1;
+		}
+		if(!ecrit){
+			sprintf(msg,"MSG %s",tampon);
+			fprintf(server->fileSock,"%s",msg);
+			fflush(server->fileSock);
+		}
+	}
 }
 
 void communicationServeur(void *pack){
@@ -161,9 +302,6 @@ void communicationServeur(void *pack){
 			if(ioctl(server->socketTCP,FIONREAD,&reste)<0 ||reste==0){ 
 				statut=1; 
 			}
-			char msg[MAX_LIGNE];
-			char pseudo[MAXNAME];
-			memset(msg,0,MAX_LIGNE);
 			while(reste>0){
 				if(fgets(tampon,MAX_LIGNE,server->fileSock)==NULL){
 					statut=1;
@@ -175,28 +313,7 @@ void communicationServeur(void *pack){
 				nb=sscanf(tampon,"%s %[^\r]",cmd,args);
 				if(nb>0){
 					//Traitement des commandes d'entrée
-					if(strcmp(cmd,"CONNECTE")==0){
-						serv.id=atoi(args);
-						fprintf(stdout,"%s",tampon);
-						fflush(stdout);
-					}
-					if(strcmp(cmd,"JOUEURS")==0){
-						fprintf(stdout,"%s",tampon);
-						fflush(stdout);
-					}
-					if(strcmp(cmd,"MSGFROM")==0){
-						strcpy(pseudo,args);
-						fflush(stdout);
-					}
-					if(strcmp(cmd,"MSG")==0){
-						fprintf(stdout,"<%s> : %s",pseudo,args);
-						fflush(stdout);
-					}
-					if(strcmp(cmd,"CMD")==0){
-						if(strcmp(args,"START")==0){
-							launchThread(envoieTouches,&serv,sizeof(serv));
-						}
-					}
+					traitementCMD(tampon,cmd,args,&serv,1);
 					reste-=strlen(tampon);
 				}
 			}
@@ -208,24 +325,10 @@ void communicationServeur(void *pack){
 			char args[MAX_LIGNE];
 			char msg[MAX_LIGNE];
 			memset(msg,0,MAX_LIGNE);
-			int ecrit=0;
+			//int ecrit=0;
 			int nb=sscanf(tampon,"%s %[^\n]",cmd,args);
 			if(nb>0){
-				if(strcmp(cmd,"/start")==0){
-					fprintf(server->fileSock,"CMD START\n");
-					fflush(server->fileSock);
-					ecrit=1;
-				}
-				if(strcmp(cmd,"/stop")==0){
-					fprintf(server->fileSock,"CMD STOP\n");
-					fflush(server->fileSock);
-					ecrit=1;
-				}
-				if(!ecrit){
-					sprintf(msg,"MSG %s",tampon);
-					fprintf(server->fileSock,"%s",msg);
-					fflush(server->fileSock);
-				}
+				traitementCMD(tampon,cmd,args,&serv,0);
 			}
 		}
 	}
@@ -239,7 +342,7 @@ int main(){
 	
 	/* recuperation du broadcast UDP des serveurs et choix d'un serveur */
 	server_t serv;
-	int socket = udpInit(PORT,0,NULL);
+	int socket = udpInit(PORT,0,NULL,0);
 	serv=pollEcoute(socket);
 	/* === Informations sur le serveur choisi === */
 	printf("Le port de la partie choisie est : %s\n",serv.portTCP);

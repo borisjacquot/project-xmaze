@@ -113,7 +113,7 @@ int nomVersAdresse(char *hote,struct sockaddr_storage *padresse){
 }
 
 /* Fonction d'ecoute du broadcast UDP sur le port 1337 */
-int udpInit(int port,int AddrHote,char *hostname){
+int udpInit(int port,int hasAddr,char *hostname,int rcvPassant){
 
 	struct sockaddr_in mysocket;
 	int s;
@@ -129,10 +129,20 @@ int udpInit(int port,int AddrHote,char *hostname){
 		exit(EXIT_FAILURE);
 	}
 
+	if(rcvPassant){
+		struct timeval minuteur;
+		minuteur.tv_sec=0;
+		minuteur.tv_usec=100;
+		if(setsockopt(s,SOL_SOCKET,SO_RCVTIMEO,&minuteur,sizeof minuteur)<0){
+			perror("udpInit.setsockopt (RCVPASSANT)");
+			exit(EXIT_FAILURE);
+		}
+	}
+
 	memset(&mysocket, 0, sizeof(mysocket));
 	mysocket.sin_family = AF_INET;
 	mysocket.sin_port = htons(port);
-	if(AddrHote){
+	if(hasAddr){
 		if(nomVersAdresse(hostname,(void *)&mysocket)<0){
 			fprintf(stderr,"udpInit.nomVersAdresse : Erreur\n");
 		}
@@ -142,13 +152,13 @@ int udpInit(int port,int AddrHote,char *hostname){
 	bzero(mysocket.sin_zero,8);
 
 	if((bind(s, (struct sockaddr *)&mysocket, sizeof(struct sockaddr)))!=0){
-		perror("udpEcoute.bind");
+		perror("udpInit.bind");
 		exit(EXIT_FAILURE);
 	}
 	return s;
 }
 
-//Reception adresse serveur
+/* Reception adresse serveur */
 void receptionServer(int socket,char *buffer, char *name,int bufferSize,int nameSize){
 	struct sockaddr_storage adresse;
 	unsigned len=sizeof(struct sockaddr);
@@ -168,6 +178,21 @@ void envoieTouche(int socket,int port, char *msg,int sizemsg,char *hostname){
 		perror("envoieTouche.sendto");
 	}
 }
+
+/* Reception Objets */
+void receptionObjets(int socket,char *objets,int objSize,char *hostname,int port){
+	struct sockaddr_in adresse;
+	unsigned len=sizeof(struct sockaddr);
+	adresse.sin_family=AF_INET;
+	if(nomVersAdresse(hostname,(void *)&adresse)<0){
+		fprintf(stderr,"envoieTouche.nomVersAdresse : Erreur\n");
+	}
+	adresse.sin_port=htons(port);
+	if(recvfrom(socket,objets,objSize,0,(struct sockaddr *)&adresse,&len)<0){
+		perror("receptionObjets.recvfrom");
+	}
+}
+
 
 /* Initialisation de la connexion TCP avec le serveur */
 int connexionServ(char *hostname,char *portTCP){
