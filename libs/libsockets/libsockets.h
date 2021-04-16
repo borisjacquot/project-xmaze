@@ -20,6 +20,8 @@
 
 /* DEFINE  */
 
+#define MAX_NAME 12
+
 /* STRUCTURES  */
 struct broadReturn {
     int sfd;
@@ -38,6 +40,7 @@ int udpInit(int,int,char *,int); //configuration de l'ecoute du broadcast udp
 struct sockaddr_in createAddr(int,char *);
 void receptionServer(int,char *,char *,int,int);
 int connexionServ(char *,char *); // initialisation de la connexion TCP avec le serveur
+int compareAdresse(char *);
 void receptionObjets(int,char *,int,char *,int);
 int nomVersAdresse(char *,struct sockaddr_storage *);
 void envoieTouche(int,int,char *,int,char *);

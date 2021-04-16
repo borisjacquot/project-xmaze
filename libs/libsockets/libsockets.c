@@ -158,6 +158,17 @@ int udpInit(int port,int hasAddr,char *hostname,int rcvPassant){
 	return s;
 }
 
+int compareAdresse(char *hostname){
+	struct sockaddr_in adr1,adr2;
+	char myname[MAX_NAME];
+	gethostname(myname,MAX_NAME);
+	adr1.sin_family=AF_INET;
+	adr2.sin_family=AF_INET;
+	nomVersAdresse(myname,(void *)&adr1);
+	nomVersAdresse(hostname,(void *)&adr2);
+	return (adr1.sin_addr.s_addr==adr2.sin_addr.s_addr);
+}
+
 /* Reception adresse serveur */
 void receptionServer(int socket,char *buffer, char *name,int bufferSize,int nameSize){
 	struct sockaddr_storage adresse;

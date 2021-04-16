@@ -185,13 +185,19 @@ void envoieTouches(void *pack){
 	int touche;
 	int recu;
 	int portUDP=atoi(server->portTCP)+1;
-	int socket=udpInit(portUDP,1,server->hostname,0);
-	int newsock=udpInit(atoi(server->portTCP),1,server->hostname,1);
-	
-	envoi[0]=server->id;
+	int socket;
+	int newsock;
+	if(compareAdresse(server->hostname)){
+		socket=udpInit(portUDP,1,server->hostname,0);
+		newsock=udpInit(atoi(server->portTCP),1,server->hostname,1);
+	}else{
+		socket=udpInit(portUDP,0,server->hostname,0);
+		newsock=udpInit(atoi(server->portTCP),0,server->hostname,1);
+	}
+
 	resultat=creerFenetre(LARGEUR,HAUTEUR,TITRE);
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
-	//launchThread(gestionJeu,&serv,sizeof(serv));
+
 	while(statut!=1){
 		/* Envoie touche */
 		recu=0;
@@ -339,7 +345,8 @@ int main(){
 	/* === Init du signal d'arret de la connexion TCP avec le serveur === */
 	action.sa_handler=hand;
 	sigaction(SIGINT,&action,NULL);
-	
+
+
 	/* recuperation du broadcast UDP des serveurs et choix d'un serveur */
 	server_t serv;
 	int socket = udpInit(PORT,0,NULL,0);
