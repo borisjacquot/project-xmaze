@@ -194,6 +194,15 @@ void envoieTouches(void *pack){
 		socket=udpInit(portUDP,0,server->hostname,0);
 		newsock=udpInit(atoi(server->portTCP),0,server->hostname,1);
 	}
+	envoi[0]=server->id;
+
+	/* Test envoi des touches
+	envoi[1]=0b00000010;
+	while(statut!=1){
+		envoieTouche(socket,portUDP,envoi,TAILLE_TOUCHES,server->hostname);
+		sleep(1);
+	}
+	*/
 
 	resultat=creerFenetre(LARGEUR,HAUTEUR,TITRE);
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
