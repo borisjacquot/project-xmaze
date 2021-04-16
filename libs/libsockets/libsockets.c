@@ -191,7 +191,7 @@ void envoieTouche(int socket,int port, char *msg,int sizemsg,char *hostname){
 }
 
 /* Reception Objets */
-void receptionObjets(int socket,char *objets,int objSize,char *hostname,int port){
+int receptionObjets(int socket,char *objets,int objSize,char *hostname,int port){
 	struct sockaddr_in adresse;
 	unsigned len=sizeof(struct sockaddr);
 	adresse.sin_family=AF_INET;
@@ -199,9 +199,11 @@ void receptionObjets(int socket,char *objets,int objSize,char *hostname,int port
 		fprintf(stderr,"envoieTouche.nomVersAdresse : Erreur\n");
 	}
 	adresse.sin_port=htons(port);
-	if(recvfrom(socket,objets,objSize,0,(struct sockaddr *)&adresse,&len)<0){
+	int nbbytes=recvfrom(socket,objets,objSize,0,(struct sockaddr *)&adresse,&len);
+	if(nbbytes<0){
 		perror("receptionObjets.recvfrom");
 	}
+	return nbbytes;
 }
 
 

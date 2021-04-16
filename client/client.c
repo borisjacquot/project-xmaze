@@ -2,10 +2,12 @@
 
 struct sigaction action;
 int statut=0;
+int inGame;
 
 void hand(int sig){
 	if(sig==SIGINT){
 		statut=1;
+		inGame=1;
 	}
 }
 
@@ -111,7 +113,7 @@ for(i=0;i<no;i++){
 }
 
 /* === POLL SUR ENTREE STANDARD ET LA SOCKET POUR AFFICHAGE ET CHOIX DU SERVEUR === */
-server_t pollEcoute(int s){
+server_t ecouteBroadcast(int s){
     	int choix;
     	char buffer[MAX_TAMPON];
 	char hostname[MAX_HOSTNAME];
@@ -121,6 +123,7 @@ server_t pollEcoute(int s){
     	int nbServ=0;
 	int flag;
 	int port;
+	balise_t bal;
 
     	struct pollfd descripteurs[2];
     	descripteurs[0].fd=s;
@@ -135,13 +138,10 @@ server_t pollEcoute(int s){
 			exit(EXIT_FAILURE);
 		}
 		if((descripteurs[0].revents&POLLIN)!=0){
-			memset(buffer,0,sizeof(buffer));
+			memset(bal.name,0,sizeof(bal.name));
 			memset(hostname,0,sizeof(hostname));
-			receptionServer(s,buffer,hostname,sizeof(buffer),sizeof(hostname));
-			strcpy(name,buffer);
-			for(long unsigned int i=0;i<sizeof(name)-1;i++){
-				name[i]=name[i+2];
-			}
+			receptionServer(s,(void *)&bal,hostname,sizeof(balise_t),sizeof(hostname));
+			strcpy(name,bal.name);
 			flag=0;
 			if(nbServ!=0){
 				for(int i=0; i<=nbServ;i++){
@@ -153,9 +153,8 @@ server_t pollEcoute(int s){
 			}
 			if(flag==0){
 				nbServ++;
-				strcpy(tab[nbServ].nom_brut,buffer);
-				port = buffer[0] + (buffer[1]<<8);
-				snprintf(tab[nbServ].portTCP,5,"%d",port);
+				port = bal.port;
+				snprintf(tab[nbServ].portTCP,TAILLE_PORT,"%d",port);
 				strcpy(tab[nbServ].nom_Server,name);
 				strcpy(tab[nbServ].hostname,hostname);
 				printf("%d) La partie de jeu %s est sur le port : %d\n",nbServ,name,port);
@@ -187,6 +186,10 @@ void envoieTouches(void *pack){
 	int portUDP=atoi(server->portTCP)+1;
 	int socket;
 	int newsock;
+	int nbObjets;
+
+	envoi[0]=server->id;
+
 	if(compareAdresse(server->hostname)){
 		socket=udpInit(portUDP,1,server->hostname,0);
 		newsock=udpInit(atoi(server->portTCP),1,server->hostname,1);
@@ -194,7 +197,6 @@ void envoieTouches(void *pack){
 		socket=udpInit(portUDP,0,server->hostname,0);
 		newsock=udpInit(atoi(server->portTCP),0,server->hostname,1);
 	}
-	envoi[0]=server->id;
 
 	/* Test envoi des touches
 	envoi[1]=0b00000010;
@@ -207,7 +209,7 @@ void envoieTouches(void *pack){
 	resultat=creerFenetre(LARGEUR,HAUTEUR,TITRE);
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
 
-	while(statut!=1){
+	while(inGame){
 		/* Envoie touche */
 		recu=0;
 		int evenement=attendreEvenement(&touche,&fenetre,&quitter);
@@ -224,10 +226,10 @@ void envoieTouches(void *pack){
 			envoieTouche(socket,portUDP,envoi,TAILLE_TOUCHES,server->hostname);
 		}
 		/* Reception et affichage jeu */
-		objet2D *objets=malloc(sizeof(objet2D));
-		receptionObjets(newsock,(void *)&objets,sizeof(objet2D),server->hostname,atoi(server->portTCP));
+		objet2D *objets=malloc(64*sizeof(objet2D));
+		nbObjets=receptionObjets(newsock,(void *)&objets,sizeof(objet2D),server->hostname,atoi(server->portTCP));
 		effacerFenetre();
-		dessine_2D(objets,sizeof(objets));
+		dessine_2D(objets,nbObjets);
 		free(objets);
 		synchroniserFenetre();
 	}
@@ -260,18 +262,23 @@ void traitementCMD(char *tampon,char *cmd,char *args,server_t *server,int isRece
 			fflush(stdout);
 		}
 		if(strcmp(cmd,CMD)==0){
-			if(strcmp(args,"START")==0){
+			if(strcmp(args,START)==0){
+				printf("--- Debut de la partie de jeu ! ---\n");
+				inGame=1;
 				launchThread(envoieTouches,(void *)server,sizeof(server_t));
+			}else if(strcmp(args,STOP)==0){
+				printf("--- Fin de la partie de jeu ! ---\n");
+				inGame=0;
 			}
 		}
 	}else{
 		int ecrit=0;
-		if(strcmp(cmd,"/start")==0){
+		if(strcmp(cmd,DEBUT)==0){
 			fprintf(server->fileSock,"CMD START\n");
 			fflush(server->fileSock);
 			ecrit=1;
 		}
-		if(strcmp(cmd,"/stop")==0){
+		if(strcmp(cmd,FIN)==0){
 			fprintf(server->fileSock,"CMD STOP\n");
 			fflush(server->fileSock);
 			ecrit=1;
@@ -359,7 +366,7 @@ int main(){
 	/* recuperation du broadcast UDP des serveurs et choix d'un serveur */
 	server_t serv;
 	int socket = udpInit(PORT,0,NULL,0);
-	serv=pollEcoute(socket);
+	serv=ecouteBroadcast(socket);
 	/* === Informations sur le serveur choisi === */
 	printf("Le port de la partie choisie est : %s\n",serv.portTCP);
 	printf("Nom de l'hote : %s\n",serv.hostname);

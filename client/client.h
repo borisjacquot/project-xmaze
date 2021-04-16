@@ -16,7 +16,6 @@
 #define MAX_PSEUDO 64
 #define MAX_SERVER 50
 #define MAX_TAMPON 512
-#define MAX_NAME_SERVER 12
 #define MAX_HOSTNAME 64
 #define TAILLE_TOUCHES 2
 #define TAILLE_PORT 5
@@ -26,8 +25,10 @@
 #define MSGFROM "MSGFROM"
 #define MSG "MSG"
 #define CMD "CMD"
-#define START "/start"
-#define STOP "/stop"
+#define START "START"
+#define STOP "STOP"
+#define DEBUT "/START"
+#define FIN "/STOP"
 
 #define TITRE	"Xmazing"
 #define LARGEUR 640
@@ -53,8 +54,7 @@ typedef struct{
 }objet2D;
 
 typedef struct server_s{
-	char nom_brut[MAX_NAME_SERVER];
-	char nom_Server[MAX_NAME_SERVER];
+	char nom_Server[MAX_NAME];
 	char portTCP[TAILLE_PORT];
 	int socketTCP;
 	char id;
