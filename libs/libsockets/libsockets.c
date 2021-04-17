@@ -189,6 +189,7 @@ int checkAddress (int s) {
 void receptionServer(int socket,char *buffer, char *name,int bufferSize,int nameSize){
 	struct sockaddr_storage adresse;
 	unsigned len=sizeof(struct sockaddr);
+
 	recvfrom(socket, buffer, bufferSize-1,0,(struct sockaddr *)&adresse,&len);
 	//getpeername(socket,(struct sockaddr *)&adresse,&len);
 	getnameinfo((struct sockaddr *)&adresse, len, name,nameSize,NULL,0,0);
@@ -225,12 +226,13 @@ void sendUdpFromSock(int stcp, int sudp, int port, char* msg, int sizemsg) {
 int receptionObjets(int socket,char *objets,int objSize,char *hostname,int port){
 	struct sockaddr_in adresse;
 	unsigned len=sizeof(struct sockaddr);
-	adresse.sin_family=AF_INET;
+	/*adresse.sin_family=AF_INET;
 	if(nomVersAdresse(hostname,(void *)&adresse)<0){
 		fprintf(stderr,"envoieTouche.nomVersAdresse : Erreur\n");
 	}
-	adresse.sin_port=htons(port);
-	int nbbytes=recvfrom(socket,objets,objSize,0,(struct sockaddr *)&adresse,&len);
+	adresse.sin_port=htons(port);*/
+	printf("port = %d\n",port);
+	int nbbytes=recvfrom(socket,objets,objSize-1,0,(struct sockaddr *)&adresse,&len);
 	/*if(nbbytes<0){
 		perror("receptionObjets.recvfrom");
 	}*/
@@ -367,9 +369,12 @@ int initSocketUDP (char * service) {
 
 }
 
-void udpRecep(int s, char * buffer, int sizebuf) {
+void udpRecep(int s, char * buffer, int sizebuf,int flag,char *name,int nameSize) {
   struct sockaddr_in addrClient;
   socklen_t size = sizeof addrClient;
 
   recvfrom(s, buffer, sizebuf, 0, (struct sockaddr *)&addrClient, &size);
+  if(flag==0){
+  	getnameinfo((struct sockaddr*) &addrClient, size, name, nameSize, NULL, 0, 0);
+  }
 }

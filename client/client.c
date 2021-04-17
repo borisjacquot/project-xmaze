@@ -190,26 +190,29 @@ void envoieTouches(void *pack){
 	int socket;
 	int newsock;
 	int nbObjets;
-	objet2D *objets=malloc(128*sizeof(objet2D));
+	objet2D *objets=malloc(64*sizeof(objet2D));
 
 	envoi[0]=server->id;
 
 	if(compareAdresse(server->hostname)){
 		socket=udpInit(portUDP,1,server->hostname,0);
-		newsock=udpInit(atoi(server->portTCP),1,server->hostname,1);
+		newsock=udpInit(portUDP-1,0,server->hostname,1);
 	}else{
 		socket=udpInit(portUDP,0,NULL,0);
 		newsock=udpInit(atoi(server->portTCP),0,NULL,1);
 	}
 
 	/* Test envoi des touches*/
-	/*
 	envoi[1]=0b00000010;
-	while(statut!=1){
+	while(inGame){
 		envoieTouche(socket,portUDP,envoi,TAILLE_TOUCHES,server->hostname);
 		sleep(1);
-	}*/
-	
+		nbObjets=receptionObjets(newsock,(void *)&objets,sizeof(objets),server->hostname,atoi(server->portTCP));
+		if(nbObjets>=0){
+			printf("objets !! = %d\n",nbObjets);
+			//memset(objets,0,64*sizeof(objet2D));
+		}
+	}	
 
 	resultat=creerFenetre(LARGEUR,HAUTEUR,TITRE);
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }

@@ -238,13 +238,21 @@ void beacon(void *pack){
 
 void controlsHandler() {
     /* écoute udp  */
-    int s, id, key; //, socksend;
+    int s, id, key,nameFlag=0, socksend;
+    char nameClient[MAX_LIGNE];
     //socksend = udpInit(KEY_PORT-1,0,NULL,0);
     s = udpInit(KEY_PORT,0,NULL,0);
     point p;
     char buffer[MAX_LIGNE];
+    memset(nameClient,0,MAX_LIGNE);
     while(gameStarted) {
-      udpRecep(s, buffer, MAX_LIGNE);
+      udpRecep(s, buffer, MAX_LIGNE,nameFlag,nameClient,MAX_LIGNE);
+      printf("%s\n",nameClient);
+      if(nameFlag == 0){
+	printf("yo\n");
+	socksend=udpInit(KEY_PORT-1,1,nameClient,0);
+	nameFlag=1;
+      }
       id = buffer[0];
       key = buffer[1];
       
@@ -283,6 +291,8 @@ void controlsHandler() {
           int no;
           projete(m2, nb, objets, &no);
           //printf("%d %d\n", objets[0].def.p[0].x, objets[0].def.p[0].y);
+	  printf("Nb = %d\n",nb);
+	  envoieTouche(socksend,KEY_PORT-1,(void *)&objets,nb,nameClient);
           /*
           struct sockaddr_in address;
           socklen_t len;
