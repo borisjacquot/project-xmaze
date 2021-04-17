@@ -137,7 +137,7 @@ server_t choixServeur(int s){
 	while(keepRunning){
 		int nb = poll(descripteurs,2,-1);
 		if(nb<0){
-			perror("udpEcoute.poll");
+			perror("choixServeur.poll");
 			exit(EXIT_FAILURE);
 		}
 		if((descripteurs[0].revents&POLLIN)!=0){

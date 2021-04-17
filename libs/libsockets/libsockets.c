@@ -200,9 +200,9 @@ int receptionObjets(int socket,char *objets,int objSize,char *hostname,int port)
 	}
 	adresse.sin_port=htons(port);
 	int nbbytes=recvfrom(socket,objets,objSize,0,(struct sockaddr *)&adresse,&len);
-	if(nbbytes<0){
+	/*if(nbbytes<0){
 		perror("receptionObjets.recvfrom");
-	}
+	}*/
 	return nbbytes;
 }
 
