@@ -169,6 +169,22 @@ int compareAdresse(char *hostname){
 	return (adr1.sin_addr.s_addr==adr2.sin_addr.s_addr);
 }
 
+int checkAddress (int s) {
+  struct sockaddr_storage address;
+  socklen_t len;
+  char name[MAX_BUFFER], local[MAX_BUFFER], nameparsed[MAX_BUFFER];
+
+  len = sizeof(address);
+  getpeername(s, (struct sockaddr*) &address, &len);
+  getnameinfo((struct sockaddr*) &address, len, name, MAX_BUFFER, NULL, 0, 0);
+  // printf("%s\n", name);
+  gethostname(local, MAX_BUFFER);
+  // printf("%s\n", local);
+  sscanf(name, "%[^.]", nameparsed);
+  // printf("%s\n", nameparsed);
+  return strcmp(nameparsed, local);
+}
+
 /* Reception adresse serveur */
 void receptionServer(int socket,char *buffer, char *name,int bufferSize,int nameSize){
 	struct sockaddr_storage adresse;
@@ -190,6 +206,21 @@ void envoieTouche(int socket,int port, char *msg,int sizemsg,char *hostname){
 	}
 }
 
+void sendUdpFromSock(int stcp, int sudp, int port, char* msg, int sizemsg) {
+  struct sockaddr_storage address;
+  socklen_t len;
+  char hostname[MAX_BUFFER];
+
+  len = sizeof(address);
+  getpeername(stcp, (struct sockaddr*) &address, &len);
+  getnameinfo((struct sockaddr*) &address, len, hostname, MAX_BUFFER, NULL, 0, 0);
+  
+  printf("%s", hostname);
+  envoieTouche(sudp, port, msg, sizemsg, hostname);
+}
+
+// TODO rendre les noms plus génériques (et donc les remplacer dans les
+// autres fonctions)
 /* Reception Objets */
 int receptionObjets(int socket,char *objets,int objSize,char *hostname,int port){
 	struct sockaddr_in adresse;
@@ -334,4 +365,11 @@ int initSocketUDP (char * service) {
 
     return s;
 
+}
+
+void udpRecep(int s, char * buffer, int sizebuf) {
+  struct sockaddr_in addrClient;
+  socklen_t size = sizeof addrClient;
+
+  recvfrom(s, buffer, sizebuf, 0, (struct sockaddr *)&addrClient, &size);
 }

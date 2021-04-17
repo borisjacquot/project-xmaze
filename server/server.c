@@ -5,7 +5,7 @@ mur murs[(LABY_X+1)*LABY_Y+(LABY_Y+1)*LABY_X];
 sphere spheres[MAX_SPHERES];
 objet2D objets[(LABY_X+1)*LABY_Y+(LABY_Y+1)*LABY_X+MAX_SPHERES];
 
-int nb;
+int nb, nbspheres=0;
 
 char *laby[2*LABY_Y+1]={
     " - - - - - - - - ",
@@ -238,24 +238,28 @@ void beacon(void *pack){
 
 void controlsHandler() {
     /* écoute udp  */
-    int s, id, key;
+    int s, id, key; //, socksend;
+    //socksend = udpInit(KEY_PORT-1,0,NULL,0);
     s = udpInit(KEY_PORT,0,NULL,0);
     point p;
-    struct sockaddr_in addrClient;
-    socklen_t size = sizeof addrClient;
     char buffer[MAX_LIGNE];
-    while(1) {
-      recvfrom(s, buffer, MAX_CMD, 0, (struct sockaddr *)&addrClient, &size);
+    while(gameStarted) {
+      udpRecep(s, buffer, MAX_LIGNE);
       id = buffer[0];
       key = buffer[1];
+      
       switch (key) {
         case HAUT:
           positions[id].x += 20*sin(2*M_PI*positions[id].angle/360);
           positions[id].z += 20*cos(2*M_PI*positions[id].angle/360);
+          spheres[id].o.x = positions[id].x;
+          spheres[id].o.z = positions[id].z;
           break;
         case BAS:
           positions[id].x -= 20*sin(2*M_PI*positions[id].angle/360);
           positions[id].z -= 20*cos(2*M_PI*positions[id].angle/360);
+          spheres[id].o.x = positions[id].x;
+          spheres[id].o.z = positions[id].z;
           break;
         case GAUCHE:
           positions[id].angle -= 5;
@@ -267,21 +271,39 @@ void controlsHandler() {
       //printf("id: %d : %d %d %d ; %d\n", id, positions[id].x, positions[id].y, positions[id].z, positions[id].angle);
       
       for (int i=0; i<nbClients; i++) {
-        p.x = positions[i].x;
-        p.y = positions[i].y;
-        p.z = positions[i].z;
-        mur *m2=duplique_murs(murs, nb);
-        decale_murs(m2, nb, p);
-        rotation_murs(m2, nb, positions[i].angle);
-        tri_murs(m2, nb);
-        objet2D *objets=malloc(nb*sizeof(objet2D));
-        int no;
-        projete(m2, nb, objets, &no);
-        //printf("%d %d\n", objets[0].def.p[0].x, objets[0].def.p[0].y);
-        free(objets);
+        if (listClients[i].connected) {
+          p.x = positions[i].x;
+          p.y = positions[i].y;
+          p.z = positions[i].z;
+          mur *m2=duplique_murs(murs, nb);
+          decale_murs(m2, nb, p);
+          rotation_murs(m2, nb, positions[i].angle);
+          tri_murs(m2, nb);
+          objet2D *objets=malloc(nb*sizeof(objet2D));
+          int no;
+          projete(m2, nb, objets, &no);
+          //printf("%d %d\n", objets[0].def.p[0].x, objets[0].def.p[0].y);
+          /*
+          struct sockaddr_in address;
+          socklen_t len;
+        
+          len = sizeof(address);
+          getpeername(listClients[i].s, (struct sockaddr*) &address, &len);
+        
+          address.sin_port=htons(KEY_PORT-1);
+          address.sin_family=AF_INET;
+	        if((sendto(socksend,"slt",sizeof("slt"),0,(struct sockaddr *)&address,len))==-1){
+		          perror("envoieTouche.sendto");
+          }
+          */
+        
+          free(objets);
+        }
       }
 
     }
+
+    printf("(INFO) --- GAME STOPPED\n");
 }
 
 
@@ -310,9 +332,15 @@ int cmdHandler(char * cmd) {
     }
 
     if (strcmp(STOP, cmd) == 0) {
-
-      // TODO
+      char stop[MAX_CMD] = "CMD STOP\r\n";
+      for(int i = 0; i<=nbClients; i++) {
+          if (listClients[i].connected) {
+            write(listClients[i].s, stop, strlen(stop));
+          }
+      }
+      gameStarted=0;
       return 1;
+
     }
 
     return 0;
@@ -379,10 +407,12 @@ void clientChat(void *pack) {
       }
       
       statut = sscanf(ligne, "CMD %s", args);
-      if (statut == 1) {
+      if (statut == 1 && listClients[b->i].admin) {
         if(!cmdHandler(args)) {
-          printf("\033[0;31m(ERROR) client %d: unknown cmd: %s\033[0m\n", b->i, args);
+        
+          printf("error cmd\n");
         } 
+        
       }
 
     }
@@ -394,26 +424,16 @@ void clientChat(void *pack) {
 
 }
 
-
-//TODO
-#define MAX_NOM   1024
-
 int saveTCP(int s) {
     balise_cotcp b;
     playerPosition p;
-    struct sockaddr_storage address;
-    socklen_t len;
     if (nbClients < MAX_CONNEXIONS) {
       b.s = s;
       b.i = nbClients;
       b.connected = 0;
       
-      len = sizeof(address);
-      getpeername(s, (struct sockaddr*)&address, &len);
-      char nom[MAX_NOM];
-      getnameinfo((struct sockaddr*)&address, len, nom,MAX_NOM,NULL,0,0);
-      printf("IP client : %s\n", nom);
-      
+      // init admin
+      if (checkAddress(s) == 0) b.admin = 1;   
 
       launchThread(clientChat, &b, sizeof(b));
       listClients[nbClients] = b;
@@ -428,6 +448,17 @@ int saveTCP(int s) {
       p.y = 0;
       p.angle = 0;
       positions[nbClients] = p;
+
+      // creation sphere joueur
+      sphere globule;
+      globule.o.x = p.x;
+      globule.o.z = p.z;
+      globule.o.y = p.y;
+      globule.r = 10;
+
+      spheres[nbClients] = globule;
+      nbspheres++;
+
 
       nbClients++;
       return 0;

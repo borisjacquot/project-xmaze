@@ -21,6 +21,7 @@
 /* DEFINE  */
 
 #define MAX_NAME 12
+#define MAX_BUFFER  1024
 
 /* STRUCTURES  */
 struct broadReturn {
@@ -46,5 +47,8 @@ int nomVersAdresse(char *,struct sockaddr_storage *);
 void envoieTouche(int,int,char *,int,char *);
 int initialisationServeur(char *,int);
 void boucleServeur(void *);
+int checkAddress(int);
+void udpRecep(int, char *, int);
+void sendUdpFromSock(int, int, int, char*, int);
 
 #endif // LIBSOCKETS_H
