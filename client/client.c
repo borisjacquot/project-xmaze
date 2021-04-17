@@ -7,109 +7,108 @@ int inGame;
 void hand(int sig){
 	if(sig==SIGINT){
 		statut=1;
-		inGame=1;
+		inGame=0;
 	}
 }
 
 /* Intersection d'un segment */
 
 unsigned char inter_seg_v(point2D a,point2D b,int x,int *y){
-if(sign(a.x-x)==sign(b.x-x)) return 0;
-*y=a.y+(b.y-a.y)*(x-a.x)/(b.x-a.x);
-return 1;
+	if(sign(a.x-x)==sign(b.x-x)) return 0;
+	*y=a.y+(b.y-a.y)*(x-a.x)/(b.x-a.x);
+	return 1;
 }
 
 unsigned char inter_seg_h(point2D a,point2D b,int *x,int y){
-if(sign(a.y-y)==sign(b.y-y)) return 0;
-*x=a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y);
-return 1;
+	if(sign(a.y-y)==sign(b.y-y)) return 0;
+	*x=a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y);
+	return 1;
 }
 
 /* Intersection d'un polygone avec un rectangle */
 
 void inter_poly_rect(point2D *orig,int no,point2D *result,int *nr){
-point2D avant[POINTS_MAX];
-point2D apres[POINTS_MAX];
-int i,j;
-for(i=0;i<no;i++) avant[i]=orig[i];
-#ifdef DEBUG
-printf("??");
-for(i=0;i<no;i++) printf("(%d,%d) ",avant[i].x,avant[i].y);
-printf("\n");
-#endif
-int nv=no;
-for(i=0;i<4;i++){
-  int np=0;
-  for(j=0;j<nv;j++){
-    int p=(j+nv-1)%nv;
-    point2D a=avant[p];
-    point2D b=avant[j];
-    int x,y;
-    unsigned char inta,intb;
-    switch(i){
-      case 0:
-        x=0;
-        inter_seg_v(a,b,x,&y);
-        if(a.x>=0) inta=1; else inta=0;
-        if(b.x>=0) intb=1; else intb=0;
-        break;
-      case 1:
-        y=HAUTEUR;
-        inter_seg_h(a,b,&x,y);
-        if(a.y<=HAUTEUR) inta=1; else inta=0;
-        if(b.y<=HAUTEUR) intb=1; else intb=0;
-        break;
-      case 2:
-        x=LARGEUR;
-        inter_seg_v(a,b,x,&y);
-        if(a.x<=LARGEUR) inta=1; else inta=0;
-        if(b.x<=LARGEUR) intb=1; else intb=0;
-        break;
-      case 3:
-        y=0;
-        inter_seg_h(a,b,&x,y);
-        if(a.y>=0) inta=1; else inta=0;
-        if(b.y>=0) intb=1; else intb=0;
-        break;
-      }
-    if(intb){
-      if(!inta){ apres[np].x=x; apres[np].y=y; np++; }
-      apres[np++]=b;
-      }
-    else{
-      if(inta){ apres[np].x=x; apres[np].y=y; np++; }
-      }
-    }
-  for(j=0;j<np;j++) avant[j]=apres[j];
-  nv=np;
-  }
-for(i=0;i<nv;i++) result[i]=avant[i];
-#ifdef DEBUG
-printf("!!");
-for(i=0;i<nv;i++) printf("(%d,%d) ",result[i].x,result[i].y);
-printf("\n");
-#endif
-*nr=nv;
+	point2D avant[POINTS_MAX];
+	point2D apres[POINTS_MAX];
+	int i,j;
+	for(i=0;i<no;i++) avant[i]=orig[i];
+	#ifdef DEBUG
+	printf("??");
+	for(i=0;i<no;i++) printf("(%d,%d) ",avant[i].x,avant[i].y);
+	printf("\n");
+	#endif
+	int nv=no;
+	for(i=0;i<4;i++){
+  		int np=0;
+  		for(j=0;j<nv;j++){
+    			int p=(j+nv-1)%nv;
+    			point2D a=avant[p];
+   			point2D b=avant[j];
+    			int x,y;
+    			unsigned char inta,intb;
+    			switch(i){
+      				case 0:
+        				x=0;
+        				inter_seg_v(a,b,x,&y);
+        				if(a.x>=0) inta=1; else inta=0;
+        				if(b.x>=0) intb=1; else intb=0;
+        				break;
+      				case 1:
+        				y=HAUTEUR;
+        				inter_seg_h(a,b,&x,y);
+        				if(a.y<=HAUTEUR) inta=1; else inta=0;
+        				if(b.y<=HAUTEUR) intb=1; else intb=0;
+        				break;
+      				case 2:
+        				x=LARGEUR;
+        				inter_seg_v(a,b,x,&y);
+        				if(a.x<=LARGEUR) inta=1; else inta=0;
+        				if(b.x<=LARGEUR) intb=1; else intb=0;
+        				break;
+      				case 3:
+        				y=0;
+        				inter_seg_h(a,b,&x,y);
+        				if(a.y>=0) inta=1; else inta=0;
+        				if(b.y>=0) intb=1; else intb=0;
+       		 			break;
+      			}	
+    			if(intb){
+      				if(!inta){ apres[np].x=x; apres[np].y=y; np++; }
+      					apres[np++]=b;
+			}else{
+     	 				if(inta){ apres[np].x=x; apres[np].y=y; np++; }
+      			}
+    		}
+  		for(j=0;j<np;j++) avant[j]=apres[j];
+  		nv=np;
+  	}
+	for(i=0;i<nv;i++) result[i]=avant[i];
+	#ifdef DEBUG
+	printf("!!");
+	for(i=0;i<nv;i++) printf("(%d,%d) ",result[i].x,result[i].y);
+	printf("\n");
+	#endif
+	*nr=nv;
 }
 
 /* Dessin d'un labyrinthe */
 
 void dessine_2D(objet2D *objet,int no){
-int i,j;
-short int x[POINTS_MAX];
-short int y[POINTS_MAX];
-for(i=0;i<no;i++){
-  if(objet[i].type==TYPE_MUR){
-    point2D poly[POINTS_MAX];
-    int np;
-    inter_poly_rect(objet[i].def.p,4,poly,&np);
-    for(j=0;j<np;j++){
-      x[j]=poly[j].x;
-      y[j]=HAUTEUR-poly[j].y;
-    }
-    polygonePlein(x,y,np,COULEUR_ROUGE,COULEUR_ROSE);
-    }
-  }
+	int i,j;
+	short int x[POINTS_MAX];
+	short int y[POINTS_MAX];
+	for(i=0;i<no;i++){
+  		if(objet[i].type==TYPE_MUR){
+    			point2D poly[POINTS_MAX];
+    			int np;
+    			inter_poly_rect(objet[i].def.p,4,poly,&np);
+    			for(j=0;j<np;j++){
+      				x[j]=poly[j].x;
+      				y[j]=HAUTEUR-poly[j].y;
+    			}
+    			polygonePlein(x,y,np,COULEUR_ROUGE,COULEUR_ROSE);
+    		}
+  	}
 }
 
 /* === POLL SUR ENTREE STANDARD ET LA SOCKET POUR AFFICHAGE ET CHOIX DU SERVEUR === */
@@ -145,7 +144,7 @@ server_t ecouteBroadcast(int s){
 			flag=0;
 			if(nbServ!=0){
 				for(int i=0; i<=nbServ;i++){
-					/* === si le serveur est deja trouve, on ajoute pas le server dans le tableau ===*/
+					/*si le serveur est deja trouve, on ne l'ajoute pas dans le tableau*/
 					if(strcmp(name,tab[i].nom_Server)==0){
 						flag=1;
 					}
@@ -187,6 +186,7 @@ void envoieTouches(void *pack){
 	int socket;
 	int newsock;
 	int nbObjets;
+	objet2D *objets=malloc(128*sizeof(objet2D));
 
 	envoi[0]=server->id;
 
@@ -194,17 +194,18 @@ void envoieTouches(void *pack){
 		socket=udpInit(portUDP,1,server->hostname,0);
 		newsock=udpInit(atoi(server->portTCP),1,server->hostname,1);
 	}else{
-		socket=udpInit(portUDP,0,server->hostname,0);
-		newsock=udpInit(atoi(server->portTCP),0,server->hostname,1);
+		socket=udpInit(portUDP,0,NULL,0);
+		newsock=udpInit(atoi(server->portTCP),0,NULL,1);
 	}
 
-	/* Test envoi des touches
+	/* Test envoi des touches*/
+	/*
 	envoi[1]=0b00000010;
 	while(statut!=1){
 		envoieTouche(socket,portUDP,envoi,TAILLE_TOUCHES,server->hostname);
 		sleep(1);
-	}
-	*/
+	}*/
+	
 
 	resultat=creerFenetre(LARGEUR,HAUTEUR,TITRE);
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
@@ -225,14 +226,18 @@ void envoieTouches(void *pack){
 		if(recu){
 			envoieTouche(socket,portUDP,envoi,TAILLE_TOUCHES,server->hostname);
 		}
+
 		/* Reception et affichage jeu */
-		objet2D *objets=malloc(64*sizeof(objet2D));
 		nbObjets=receptionObjets(newsock,(void *)&objets,sizeof(objet2D),server->hostname,atoi(server->portTCP));
-		effacerFenetre();
-		dessine_2D(objets,nbObjets);
-		free(objets);
-		synchroniserFenetre();
+		if(nbObjets!=-1){
+			effacerFenetre();
+			dessine_2D(objets,nbObjets);
+			synchroniserFenetre();
+			memset(objets,0,128*sizeof(objet2D));
+		}
 	}
+
+	free(objets);
 	fermerFenetre();
 	close(socket);
 	close(newsock);
@@ -247,19 +252,22 @@ void traitementCMD(char *tampon,char *cmd,char *args,server_t *server,int isRece
 		if(strcmp(cmd,CONNECTE)==0){
 			server->id=atoi(args);
 			fprintf(stdout,"%s",tampon);
-			fflush(stdout);
+			//fflush(stdout);
 		}
 		if(strcmp(cmd,JOUEURS)==0){
 			fprintf(stdout,"%s",tampon);
-			fflush(stdout);
+			//fflush(stdout);
 		}
 		if(strcmp(cmd,MSGFROM)==0){
+			memset(pseudo,0,MAX_LIGNE);
 			strcpy(pseudo,args);
-			fflush(stdout);
 		}
 		if(strcmp(cmd,MSG)==0){
 			fprintf(stdout,"<%s> : %s",pseudo,args);
-			fflush(stdout);
+		}
+		if(strcmp(cmd,ERROR)==0){
+			fprintf(stdout,"!! %s : %s !!",cmd,args);
+			//fflush(stdout);
 		}
 		if(strcmp(cmd,CMD)==0){
 			if(strcmp(args,START)==0){
@@ -271,23 +279,26 @@ void traitementCMD(char *tampon,char *cmd,char *args,server_t *server,int isRece
 				inGame=0;
 			}
 		}
+		fflush(stdout);
 	}else{
 		int ecrit=0;
-		if(strcmp(cmd,DEBUT)==0){
-			fprintf(server->fileSock,"CMD START\n");
-			fflush(server->fileSock);
-			ecrit=1;
-		}
-		if(strcmp(cmd,FIN)==0){
-			fprintf(server->fileSock,"CMD STOP\n");
-			fflush(server->fileSock);
+		if(cmd[0]=='/'){
+			for(int i=0;i<MAX_TAMPON-1;i++){
+				cmd[i]=cmd[i+1];
+			}
+			if(strcmp(cmd,START)==0){
+				fprintf(server->fileSock,"CMD START\n");
+			}
+			if(strcmp(cmd,STOP)==0){
+				fprintf(server->fileSock,"CMD STOP\n");
+			}
 			ecrit=1;
 		}
 		if(!ecrit){
 			sprintf(msg,"MSG %s",tampon);
 			fprintf(server->fileSock,"%s",msg);
-			fflush(server->fileSock);
 		}
+		fflush(server->fileSock);
 	}
 }
 
@@ -347,7 +358,6 @@ void communicationServeur(void *pack){
 			char args[MAX_LIGNE];
 			char msg[MAX_LIGNE];
 			memset(msg,0,MAX_LIGNE);
-			//int ecrit=0;
 			int nb=sscanf(tampon,"%s %[^\n]",cmd,args);
 			if(nb>0){
 				traitementCMD(tampon,cmd,args,&serv,0);

@@ -27,8 +27,7 @@
 #define CMD "CMD"
 #define START "START"
 #define STOP "STOP"
-#define DEBUT "/START"
-#define FIN "/STOP"
+#define ERROR "ERREUR"
 
 #define TITRE	"Xmazing"
 #define LARGEUR 640
