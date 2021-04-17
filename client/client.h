@@ -36,6 +36,7 @@
 #define POINTS_MAX 32
 
 #define TYPE_MUR 0
+#define TYPE_SPHERE 1
 
 #define sign(a) (((a)==0)?0:(((a)>0)?1:-1))
 
@@ -49,6 +50,10 @@ typedef struct{
 	int type;
 	union{
 		point2D p[4];
+		struct{
+			point2D o;
+			int r;
+		};
 	}def;
 }objet2D;
 

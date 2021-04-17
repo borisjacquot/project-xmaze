@@ -107,12 +107,16 @@ void dessine_2D(objet2D *objet,int no){
       				y[j]=HAUTEUR-poly[j].y;
     			}
     			polygonePlein(x,y,np,COULEUR_ROUGE,COULEUR_ROSE);
-    		}
+    		}else if(objet[i].type==TYPE_SPHERE){
+			point2D centre=objet[i].def.o;
+			int r = objet[i].def.r;
+			disque(centre.x,centre.y,r,COULEUR_BLANC,COULEUR_BLANC);
+		}
   	}
 }
 
-/* === POLL SUR ENTREE STANDARD ET LA SOCKET POUR AFFICHAGE ET CHOIX DU SERVEUR === */
-server_t ecouteBroadcast(int s){
+/* POLL SUR ENTREE STANDARD ET LA SOCKET POUR AFFICHAGE ET CHOIX DU SERVEUR */
+server_t choixServeur(int s){
     	int choix;
     	char buffer[MAX_TAMPON];
 	char hostname[MAX_HOSTNAME];
@@ -376,7 +380,7 @@ int main(){
 	/* recuperation du broadcast UDP des serveurs et choix d'un serveur */
 	server_t serv;
 	int socket = udpInit(PORT,0,NULL,0);
-	serv=ecouteBroadcast(socket);
+	serv=choixServeur(socket);
 	/* === Informations sur le serveur choisi === */
 	printf("Le port de la partie choisie est : %s\n",serv.portTCP);
 	printf("Nom de l'hote : %s\n",serv.hostname);
