@@ -134,6 +134,7 @@ server_t choixServeur(int s){
     	descripteurs[1].fd=0;
     	descripteurs[1].events=POLLIN;
 	printf("Entrez le numero du serveur souhaite a n'importe quel moment\n");
+
 	while(keepRunning){
 		int nb = poll(descripteurs,2,-1);
 		if(nb<0){
@@ -187,37 +188,24 @@ void envoieTouches(void *pack){
 	int touche;
 	int recu;
 	int portTouches=atoi(server->portTCP)+1;
-	int socket;
-	int newsock;
+	int socketEnvoi;
+	int socketRecep;
 	int nbObjets;
 	objet2D *objets=malloc(64*sizeof(objet2D));
 
 	envoi[0]=server->id;
 
 	if(compareAdresse(server->hostname)){
-		socket=udpInit(portTouches,1,server->hostname,0);
-		newsock=udpInit(portTouches-1,0,NULL,1);
+		socketEnvoi=udpInit(portTouches,1,server->hostname,0);
 	}else{
-		socket=udpInit(portTouches,0,NULL,0);
-		newsock=udpInit(portTouches-1,0,NULL,1);
+		socketEnvoi=udpInit(portTouches,0,NULL,0);
 	}
-
-	/* Test envoi des touches*/
-	/*
-	envoi[1]=0b00000010;
-	while(inGame){
-		envoieTouche(socket,portTouches,envoi,TAILLE_TOUCHES,server->hostname);
-		sleep(1);
-		nbObjets=receptionObjets(newsock,(void *)&objets,sizeof(objets),server->hostname,atoi(server->portTCP));
-		if(nbObjets>=0){
-			printf("objets !! = %d\n",nbObjets);
-			//memset(objets,0,64*sizeof(objet2D));
-		}
-	}
-*/	
+	socketRecep=udpInit(portTouches-1,0,NULL,1);
 
 	resultat=creerFenetre(LARGEUR,HAUTEUR,TITRE);
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
+	effacerFenetre();
+	synchroniserFenetre();
 
 	while(inGame){
 		/* Envoie touche */
@@ -231,13 +219,13 @@ void envoieTouches(void *pack){
 			if(touche==TOUCHE_BAS) { envoi[1]=0b00001000; recu=1; }
 			if(touche==TOUCHE_ESPACE) { envoi[1]=0b00010000; recu=1; }
 		}
-		if(quitter==1){ envoi[1]=0b00100000; printf("Quitter\n"); break; }
+		if(quitter==1){ envoi[1]=0b00100000; break; }
 		if(recu){
-			envoieTouche(socket,portTouches,envoi,TAILLE_TOUCHES,server->hostname);
+			udpEnvoi(socketEnvoi,portTouches,envoi,TAILLE_TOUCHES,server->hostname);
 		}
 
 		/* Reception et affichage jeu */
-		nbObjets=receptionObjets(newsock,(void *)objets,64*sizeof(objet2D),server->hostname,portTouches-1)/36; // Divise par 36 sinon nbObjets beaucoup trop grand
+		nbObjets=receptionUDP(socketRecep,(void *)objets,64*sizeof(objet2D),server->hostname,portTouches-1)/36; // Divise par 36 sinon nbObjets beaucoup trop grand
 		if(nbObjets>0){
 			effacerFenetre();
 			dessine_2D(objets,nbObjets);
@@ -248,27 +236,26 @@ void envoieTouches(void *pack){
 
 	free(objets);
 	fermerFenetre();
-	close(socket);
-	close(newsock);
+	close(socketEnvoi);
+	close(socketRecep);
 	printf("Fin de thread envoie des touches et gestion du jeu\n");
 }
 
-void traitementCMD(char *tampon,char *cmd,char *args,server_t *server,int isReception){
+/* Traitement commandes du serveur et du client */
+void traitementCMD(char *tampon,char *cmd,char *args,char *pseudo,server_t *server,int isReception){
 	char msg[MAX_LIGNE];
-	char pseudo[MAXNAME];
 	memset(msg,0,MAX_LIGNE);
 	if(isReception){
+		/* Commandes du serveur */
 		if(strcmp(cmd,CONNECTE)==0){
 			server->id=atoi(args);
 			fprintf(stdout,"%s",tampon);
-			//fflush(stdout);
 		}
 		if(strcmp(cmd,JOUEURS)==0){
 			fprintf(stdout,"%s",tampon);
-			//fflush(stdout);
 		}
 		if(strcmp(cmd,MSGFROM)==0){
-			memset(pseudo,0,MAX_LIGNE);
+			memset(pseudo,0,MAX_PSEUDO);
 			strcpy(pseudo,args);
 		}
 		if(strcmp(cmd,MSG)==0){
@@ -276,7 +263,6 @@ void traitementCMD(char *tampon,char *cmd,char *args,server_t *server,int isRece
 		}
 		if(strcmp(cmd,ERROR)==0){
 			fprintf(stdout,"!! %s : %s !!",cmd,args);
-			//fflush(stdout);
 		}
 		if(strcmp(cmd,CMD)==0){
 			if(strcmp(args,START)==0){
@@ -290,6 +276,7 @@ void traitementCMD(char *tampon,char *cmd,char *args,server_t *server,int isRece
 		}
 		fflush(stdout);
 	}else{
+		/* Commandes du client */
 		int ecrit=0;
 		if(cmd[0]=='/'){
 			for(int i=0;i<MAX_TAMPON-1;i++){
@@ -354,8 +341,8 @@ void communicationServeur(void *pack){
 				}
 				nb=sscanf(tampon,"%s %[^\r]",cmd,args);
 				if(nb>0){
-					//Traitement des commandes d'entrée
-					traitementCMD(tampon,cmd,args,&serv,1);
+					//Traitement de des commandes du serveur
+					traitementCMD(tampon,cmd,args,pseudo,&serv,1);
 					reste-=strlen(tampon);
 				}
 			}
@@ -369,15 +356,17 @@ void communicationServeur(void *pack){
 			memset(msg,0,MAX_LIGNE);
 			int nb=sscanf(tampon,"%s %[^\n]",cmd,args);
 			if(nb>0){
-				traitementCMD(tampon,cmd,args,&serv,0);
+				//Traitement de l'entree standard
+				traitementCMD(tampon,cmd,args,pseudo,&serv,0);
 			}
 		}
 	}
+	inGame=0;
 	printf("Deconnexion avec le serveur TCP, appuyez sur CTRL+C pour arreter le client\n");
 }
 
 int main(){
-	/* === Init du signal d'arret de la connexion TCP avec le serveur === */
+	/* Init du signal d'arret de la connexion TCP avec le serveur */
 	action.sa_handler=hand;
 	sigaction(SIGINT,&action,NULL);
 
@@ -386,17 +375,17 @@ int main(){
 	server_t serv;
 	int socket = udpInit(PORT,0,NULL,0);
 	serv=choixServeur(socket);
-	/* === Informations sur le serveur choisi === */
-	printf("Le port de la partie choisie est : %s\n",serv.portTCP);
+	/* Informations sur le serveur choisi */
 	printf("Nom de l'hote : %s\n",serv.hostname);
+	printf("Le port de la partie choisie est : %s\n",serv.portTCP);
 	printf("Port UDP de l'envoi des touches : %d\n",atoi(serv.portTCP)+1);
 
-	/* === Connexion TCP client : utilisation du cours === */
+	/* Connexion TCP client : utilisation du cours */
 	serv.socketTCP=connexionServ(serv.hostname,serv.portTCP);
 	serv.fileSock=fdopen(serv.socketTCP,"a+");
 	launchThread(communicationServeur,&serv,sizeof(serv));
-	/* Fin de la connexion */
 
+	/* Fin de la connexion */
 	pause();
 
 	fclose(serv.fileSock);

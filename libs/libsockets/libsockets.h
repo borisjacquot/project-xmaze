@@ -42,12 +42,13 @@ struct sockaddr_in createAddr(int,char *);
 void receptionServer(int,char *,char *,int,int);
 int connexionServ(char *,char *); // initialisation de la connexion TCP avec le serveur
 int compareAdresse(char *);
-int receptionObjets(int,char *,int,char *,int);
+int receptionUDP(int,char *,int,char *,int);
 int nomVersAdresse(char *,struct sockaddr_storage *);
-void envoieTouche(int,int,char *,int,char *);
+void udpEnvoi(int,int,char *,int,char *);
 int initialisationServeur(char *,int);
 void boucleServeur(void *);
 int checkAddress(int);
+int initSocketUDP(char *);
 void udpRecep(int, char *, int);
 void sendFromSock(int, int, void*, int, int);
 

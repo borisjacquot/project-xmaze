@@ -112,7 +112,7 @@ int nomVersAdresse(char *hote,struct sockaddr_storage *padresse){
 	return 0;
 }
 
-/* Fonction d'ecoute du broadcast UDP sur le port 1337 */
+/* Initialisation socket UDP */
 int udpInit(int port,int hasAddr,char *hostname,int rcvPassant){
 
 	struct sockaddr_in mysocket;
@@ -158,6 +158,7 @@ int udpInit(int port,int hasAddr,char *hostname,int rcvPassant){
 	return s;
 }
 
+/* Compare adresse du hostname avec l'adresse locale */
 int compareAdresse(char *hostname){
 	struct sockaddr_in adr1,adr2;
 	char myname[MAX_NAME];
@@ -191,38 +192,27 @@ void receptionServer(int socket,char *buffer, char *name,int bufferSize,int name
 	unsigned len=sizeof(struct sockaddr);
 
 	recvfrom(socket, buffer, bufferSize-1,0,(struct sockaddr *)&adresse,&len);
-	//getpeername(socket,(struct sockaddr *)&adresse,&len);
 	getnameinfo((struct sockaddr *)&adresse, len, name,nameSize,NULL,0,0);
 }
 
-void envoieTouche(int socket,int port, char *msg,int sizemsg,char *hostname){
+/* Envoie en UDP */
+void udpEnvoi(int socket,int port, char *msg,int sizemsg,char *hostname){
 	struct sockaddr_in adresse;
 	adresse.sin_family=AF_INET;
 	if(nomVersAdresse(hostname,(void *)&adresse)<0){
-		fprintf(stderr,"envoieTouche.nomVersAdresse : Erreur\n");
+		fprintf(stderr,"udpEnvoi.nomVersAdresse : Erreur\n");
 	}
 	adresse.sin_port=htons(port);
 	if((sendto(socket,msg,sizemsg,0,(struct sockaddr *)&adresse,sizeof adresse))==-1){
-		perror("envoieTouche.sendto");
+		perror("udpEnvoi.sendto");
 	}
 }
 
-// TODO rendre les noms plus génériques (et donc les remplacer dans les
-// autres fonctions)
-/* Reception Objets */
-int receptionObjets(int socket,char *objets,int objSize,char *hostname,int port){
+/* Reception UDP */
+int receptionUDP(int socket,char *objets,int objSize,char *hostname,int port){
 	struct sockaddr_in adresse;
 	unsigned len=sizeof(struct sockaddr);
-	/*adresse.sin_family=AF_INET;
-	if(nomVersAdresse(hostname,(void *)&adresse)<0){
-		fprintf(stderr,"envoieTouche.nomVersAdresse : Erreur\n");
-	}
-	adresse.sin_port=htons(port);*/
-	printf("port = %d\n",port);
 	int nbbytes=recvfrom(socket,objets,objSize-1,0,(struct sockaddr *)&adresse,&len);
-	/*if(nbbytes<0){
-		perror("receptionObjets.recvfrom");
-	}*/
 	return nbbytes;
 }
 
@@ -376,5 +366,4 @@ void sendFromSock(int s, int socksend, void * item, int itemsize, int port) {
 	if((sendto(socksend, item, itemsize, 0, (struct sockaddr *)&address, len))==-1){
     perror("envoieTouche.sendto");
   }
-
 }
