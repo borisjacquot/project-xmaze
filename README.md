@@ -19,9 +19,7 @@
 Un projet réalisé par Boris Jacquot et Louis Wadbled.
 
 
-## Installation
-
-C'est toujours bien.
+## Installation
 
 ### Dépendances
 
@@ -35,15 +33,39 @@ apt install libsdl2-gfx-dev
 ### Compilation
 
 ```bash
-make clean
-make
+make clean all
 ```
+
+### Execution
+
+```bash
+./server/server     // lancer le serveur
+./client/client     // lancer le client
+```
+
+## Fonctionnalités
+
+### Serveur
+
++ ✅ - Broadcast UDP
++ ✅ - Connexion TCP avec le serveur
++ ✅ - Récepetion et execution des commandes
++ ✅ - Réception des touches
++ ✅ - Mise à jour de la position du joueur
+
++ ⚠️ - Envoi des graphismes ➡️ *ne semble fonctionner que sur la machine locale, et n'envoie que des murs*
+
++ 🆘 - Gestion des spheres ➡️ *fonctions prêtes sauf le tri fusion qui ne fonctionne pas, donc pas d'envoi de disques au client*
+
+### Client
+
+todo
 
 ## Auteurs
 
 + **Boris Jacquot** - *server*
 + **Louis Wadbled** - *client*
-+ **Xavier Redon** - *interface graphique*
++ **Xavier Redon** - *interface graphique + labyrinthe*
 
 ## License
 
