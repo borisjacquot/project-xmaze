@@ -16,7 +16,7 @@ MAKE = make
 # Constantes du projet
 #
 
-DIRS=Graphique Labyrinthe libsockets libthreads
+DIRS=Graphique libsockets libthreads
 
 #
 # Cible principale

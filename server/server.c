@@ -7,6 +7,8 @@ objet2D objets[(LABY_X+1)*LABY_Y+(LABY_Y+1)*LABY_X+MAX_SPHERES];
 
 int nb, nbspheres=0;
 
+int keepRunning = 1;
+
 char *laby[2*LABY_Y+1]={
     " - - - - - - - - ",
     "|. . . . . . . .|",
@@ -35,13 +37,13 @@ playerPosition positions[MAX_CONNEXIONS];
 
 /* --- FUNCTIONS --- */
 
-/*
+
 void hand(int sig) {
     if (sig == SIGINT) {
         keepRunning = 0;
     }
 }
-*/
+
 
 point soustraire_points(point p1, point p2) {
     point p;
@@ -238,36 +240,42 @@ void beacon(void *pack){
 
 void controlsHandler() {
     /* écoute udp  */
-    int s, id, key,nameFlag=0, socksend;
-    char nameClient[MAX_LIGNE];
-    //socksend = udpInit(KEY_PORT-1,0,NULL,0);
+    int s, id, key, socksend;
+    int newx,newz;
+
+    socksend = udpInit(KEY_PORT-1,0,NULL,0);
     s = udpInit(KEY_PORT,0,NULL,0);
+
     point p;
     char buffer[MAX_LIGNE];
-    memset(nameClient,0,MAX_LIGNE);
+
     while(gameStarted) {
-      udpRecep(s, buffer, MAX_LIGNE,nameFlag,nameClient,MAX_LIGNE);
-      printf("%s\n",nameClient);
-      //TODO a modifier pour fonctionner avec tous les clients
-      if(nameFlag == 0){
-	socksend=udpInit(KEY_PORT-1,1,nameClient,0);
-	nameFlag=1;
-      }
+      udpRecep(s, buffer, MAX_LIGNE);
+ 
       id = buffer[0];
       key = buffer[1];
       
       switch (key) {
         case HAUT:
-          positions[id].x += 20*sin(2*M_PI*positions[id].angle/360);
-          positions[id].z += 20*cos(2*M_PI*positions[id].angle/360);
-          spheres[id].o.x = positions[id].x;
-          spheres[id].o.z = positions[id].z;
+
+          newx = positions[id].x + 20*sin(2*M_PI*positions[id].angle/360);
+          newz = positions[id].z + 20*cos(2*M_PI*positions[id].angle/360);
+          if (positionOK(newx, newz, murs, nb)) {
+            positions[id].x = newx;
+            positions[id].z = newz;
+            spheres[id].o.x = newx;
+            spheres[id].o.z = newz;
+          }
           break;
         case BAS:
-          positions[id].x -= 20*sin(2*M_PI*positions[id].angle/360);
-          positions[id].z -= 20*cos(2*M_PI*positions[id].angle/360);
-          spheres[id].o.x = positions[id].x;
-          spheres[id].o.z = positions[id].z;
+          newx = positions[id].x - 20*sin(2*M_PI*positions[id].angle/360);
+          newz = positions[id].z - 20*cos(2*M_PI*positions[id].angle/360);
+          if (positionOK(newx, newz, murs, nb)) {
+            positions[id].x = newx;
+            positions[id].z = newz;
+            spheres[id].o.x = newx;
+            spheres[id].o.z = newz;
+          }
           break;
         case GAUCHE:
           positions[id].angle -= 5;
@@ -290,21 +298,9 @@ void controlsHandler() {
           objet2D *objets=malloc(nb*sizeof(objet2D));
           int no;
           projete(m2, nb, objets, &no);
-          //printf("%d %d\n", objets[0].def.p[0].x, objets[0].def.p[0].y);
-	  envoieTouche(socksend,KEY_PORT-1,(void *)objets,nb*sizeof(objet2D),nameClient);
-          /*
-          struct sockaddr_in address;
-          socklen_t len;
-        
-          len = sizeof(address);
-          getpeername(listClients[i].s, (struct sockaddr*) &address, &len);
-        
-          address.sin_port=htons(KEY_PORT-1);
-          address.sin_family=AF_INET;
-	        if((sendto(socksend,"slt",sizeof("slt"),0,(struct sockaddr *)&address,len))==-1){
-		          perror("envoieTouche.sendto");
-          }
-          */
+          printf("%d %d\n", objets[0].def.p[0].x, objets[0].def.p[0].y);
+          
+          sendFromSock(listClients[i].s, socksend, (void *) objets, nb*sizeof(objet2D), KEY_PORT-1);         
         
           free(objets);
         }
@@ -443,6 +439,8 @@ int saveTCP(int s) {
       
       // init admin
       if (checkAddress(s) == 0) b.admin = 1;   
+      if (nbClients == 0) b.admin = 1;
+
 
       launchThread(clientChat, &b, sizeof(b));
       listClients[nbClients] = b;
@@ -485,12 +483,12 @@ int main(void) {
 
 
     /* --- BROADCAST UDP --- */
-//    struct sigaction action = {0};
+    struct sigaction action = {0};
     
-    /*
+    
     action.sa_handler = hand;
     sigaction(SIGINT, &action, NULL);
-    */
+    
 
     beaconPack pack;
 
@@ -507,7 +505,7 @@ int main(void) {
     balise_trait b;
 
     /* Initialisation du serveur */
-    s=initialisationServeur("1330",MAX_CONNEXIONS);
+    s=initialisationServeur(SERVER_PORT,MAX_CONNEXIONS);
     if (s < 0) {
       perror("Erreur initialisation serveur");
       exit(-1);
@@ -519,7 +517,7 @@ int main(void) {
     launchThread(boucleServeur, &b, sizeof(b));
     /* --- FIN CONNEXION TCP  ---  */
 
-    pause();
+    while (keepRunning) pause();
 
     printf("\nBelle journée\n");
     return 0;
