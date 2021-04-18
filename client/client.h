@@ -19,6 +19,7 @@
 #define MAX_HOSTNAME 64
 #define TAILLE_TOUCHES 2
 #define TAILLE_PORT 5
+#define MAX_OBJET 64
 
 #define CONNECTE "CONNECTE"
 #define JOUEURS "JOUEURS"

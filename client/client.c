@@ -192,7 +192,7 @@ void envoieTouches(void *pack){
 	int socketEnvoi;
 	int socketRecep;
 	int nbObjets;
-	objet2D *objets=malloc(64*sizeof(objet2D));
+	objet2D *objets=malloc(MAX_OBJET*sizeof(objet2D));
 
 	envoi[0]=server->id;
 
@@ -225,14 +225,14 @@ void envoieTouches(void *pack){
 		if(recu){
 			udpEnvoi(socketEnvoi,portTouches,envoi,TAILLE_TOUCHES,server->hostname);
 		}
-
+		
 		/* Reception et affichage jeu */
-		nbObjets=udpRecep(socketRecep,(void *)objets,64*sizeof(objet2D))/36; // Divise par 36 sinon nbObjets beaucoup trop grand
+		nbObjets=udpRecep(socketRecep,(void *)objets,MAX_OBJET*sizeof(objet2D))/(int)sizeof(objet2D);
 		if(nbObjets>0){
 			effacerFenetre();
 			dessine_2D(objets,nbObjets);
 			synchroniserFenetre();
-			memset(objets,0,64*sizeof(objet2D));
+			memset(objets,0,MAX_OBJET*sizeof(objet2D));
 		}
 	}
 
