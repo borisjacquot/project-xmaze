@@ -59,7 +59,14 @@ make clean all
 
 ### Client
 
-todo
++ ✅ - Affichage des serveurs effectuant un broadcast
++ ✅ - Choix du serveur
++ ✅ - Connexion TCP au serveur
++ ✅ - Envoie des commandes, affichage du chat, lancement de la partie
++ ✅ - Envoie des touches
+
++ ⚠️ - Reception des graphismes ➡️ *ne semble s'afficher que pour la machine locale*
++ ⚠️ - Affichage des spheres ➡️  *n'a pas été testé*
 
 ## Auteurs
 
