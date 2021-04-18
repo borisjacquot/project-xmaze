@@ -45,7 +45,7 @@ make clean all
 
 ## Fonctionnalités
 
-# Serveur
+### Serveur
 
 + ✅ - Broadcast UDP
 + ✅ - Connexion TCP avec le serveur
@@ -57,7 +57,7 @@ make clean all
 
 + 🆘 - Gestion des spheres ➡️ *fonctions prêtes sauf le tri fusion qui ne fonctionne pas, donc pas d'envoi de disques au client*
 
-# Client
+### Client
 
 todo
 
