@@ -166,6 +166,7 @@ server_t choixServeur(int s){
 		}
 		if((descripteurs[1].revents&POLLIN)!=0){
 			if(nbServ!=0){
+				/* choix serveur */
 				int taille=read(0,buffer,sizeof(buffer));
 				if(taille<0) break;
 				choix=atoi(buffer);
@@ -202,6 +203,7 @@ void envoieTouches(void *pack){
 	}
 	socketRecep=udpInit(portTouches-1,0,NULL,1);
 
+	/* creation fenetre */
 	resultat=creerFenetre(LARGEUR,HAUTEUR,TITRE);
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
 	effacerFenetre();
@@ -225,7 +227,7 @@ void envoieTouches(void *pack){
 		}
 
 		/* Reception et affichage jeu */
-		nbObjets=receptionUDP(socketRecep,(void *)objets,64*sizeof(objet2D),server->hostname,portTouches-1)/36; // Divise par 36 sinon nbObjets beaucoup trop grand
+		nbObjets=udpRecep(socketRecep,(void *)objets,64*sizeof(objet2D))/36; // Divise par 36 sinon nbObjets beaucoup trop grand
 		if(nbObjets>0){
 			effacerFenetre();
 			dessine_2D(objets,nbObjets);
@@ -298,6 +300,7 @@ void traitementCMD(char *tampon,char *cmd,char *args,char *pseudo,server_t *serv
 	}
 }
 
+/* Communication TCP avec le serveur */
 void communicationServeur(void *pack){
 	server_t *server=pack;
 	server_t serv=*server;

@@ -208,15 +208,6 @@ void udpEnvoi(int socket,int port, char *msg,int sizemsg,char *hostname){
 	}
 }
 
-/* Reception UDP */
-int receptionUDP(int socket,char *objets,int objSize,char *hostname,int port){
-	struct sockaddr_in adresse;
-	unsigned len=sizeof(struct sockaddr);
-	int nbbytes=recvfrom(socket,objets,objSize-1,0,(struct sockaddr *)&adresse,&len);
-	return nbbytes;
-}
-
-
 /* Initialisation de la connexion TCP avec le serveur */
 int connexionServ(char *hostname,char *portTCP){
 	struct addrinfo precisions,*resultat,*origine;
@@ -346,11 +337,13 @@ int initSocketUDP (char * service) {
 
 }
 
-void udpRecep(int s, char * buffer, int sizebuf) {
+/* Reception UDP */
+int udpRecep(int s, char * buffer, int sizebuf) {
   struct sockaddr_in addrClient;
   socklen_t size = sizeof addrClient;
 
-  recvfrom(s, buffer, sizebuf, 0, (struct sockaddr *)&addrClient, &size);
+  int nbbytes=recvfrom(s, buffer, sizebuf, 0, (struct sockaddr *)&addrClient, &size);
+  return nbbytes;
 }
 
 void sendFromSock(int s, int socksend, void * item, int itemsize, int port) {
