@@ -186,7 +186,7 @@ void envoieTouches(void *pack){
 	char envoi[TAILLE_TOUCHES];
 	int touche;
 	int recu;
-	int portUDP=atoi(server->portTCP)+1;
+	int portTouches=atoi(server->portTCP)+1;
 	int socket;
 	int newsock;
 	int nbObjets;
@@ -195,24 +195,26 @@ void envoieTouches(void *pack){
 	envoi[0]=server->id;
 
 	if(compareAdresse(server->hostname)){
-		socket=udpInit(portUDP,1,server->hostname,0);
-		newsock=udpInit(portUDP-1,0,server->hostname,1);
+		socket=udpInit(portTouches,1,server->hostname,0);
+		newsock=udpInit(portTouches-1,0,NULL,1);
 	}else{
-		socket=udpInit(portUDP,0,NULL,0);
-		newsock=udpInit(atoi(server->portTCP),0,NULL,1);
+		socket=udpInit(portTouches,0,NULL,0);
+		newsock=udpInit(portTouches-1,0,NULL,1);
 	}
 
 	/* Test envoi des touches*/
+	/*
 	envoi[1]=0b00000010;
 	while(inGame){
-		envoieTouche(socket,portUDP,envoi,TAILLE_TOUCHES,server->hostname);
+		envoieTouche(socket,portTouches,envoi,TAILLE_TOUCHES,server->hostname);
 		sleep(1);
 		nbObjets=receptionObjets(newsock,(void *)&objets,sizeof(objets),server->hostname,atoi(server->portTCP));
 		if(nbObjets>=0){
 			printf("objets !! = %d\n",nbObjets);
 			//memset(objets,0,64*sizeof(objet2D));
 		}
-	}	
+	}
+*/	
 
 	resultat=creerFenetre(LARGEUR,HAUTEUR,TITRE);
 	if(!resultat){ fprintf(stderr,"Probleme graphique\n"); exit(-1); }
@@ -231,16 +233,16 @@ void envoieTouches(void *pack){
 		}
 		if(quitter==1){ envoi[1]=0b00100000; printf("Quitter\n"); break; }
 		if(recu){
-			envoieTouche(socket,portUDP,envoi,TAILLE_TOUCHES,server->hostname);
+			envoieTouche(socket,portTouches,envoi,TAILLE_TOUCHES,server->hostname);
 		}
 
 		/* Reception et affichage jeu */
-		nbObjets=receptionObjets(newsock,(void *)&objets,sizeof(objet2D),server->hostname,atoi(server->portTCP));
-		if(nbObjets!=-1){
+		nbObjets=receptionObjets(newsock,(void *)objets,64*sizeof(objet2D),server->hostname,portTouches-1)/36; // Divise par 36 sinon nbObjets beaucoup trop grand
+		if(nbObjets>0){
 			effacerFenetre();
 			dessine_2D(objets,nbObjets);
 			synchroniserFenetre();
-			memset(objets,0,128*sizeof(objet2D));
+			memset(objets,0,64*sizeof(objet2D));
 		}
 	}
 

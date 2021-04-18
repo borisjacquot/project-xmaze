@@ -248,8 +248,8 @@ void controlsHandler() {
     while(gameStarted) {
       udpRecep(s, buffer, MAX_LIGNE,nameFlag,nameClient,MAX_LIGNE);
       printf("%s\n",nameClient);
+      //TODO a modifier pour fonctionner avec tous les clients
       if(nameFlag == 0){
-	printf("yo\n");
 	socksend=udpInit(KEY_PORT-1,1,nameClient,0);
 	nameFlag=1;
       }
@@ -291,8 +291,7 @@ void controlsHandler() {
           int no;
           projete(m2, nb, objets, &no);
           //printf("%d %d\n", objets[0].def.p[0].x, objets[0].def.p[0].y);
-	  printf("Nb = %d\n",nb);
-	  envoieTouche(socksend,KEY_PORT-1,(void *)&objets,nb,nameClient);
+	  envoieTouche(socksend,KEY_PORT-1,(void *)objets,nb*sizeof(objet2D),nameClient);
           /*
           struct sockaddr_in address;
           socklen_t len;
